@@ -1,0 +1,24 @@
+# Orchestrator Agent
+# Agent điều phối, phân chia công việc cho các agent khác.
+
+id = "orchestrator"
+name = "Orchestrator"
+model = "anthropic/claude-sonnet-4-20250514"
+
+[tools]
+builtin = ["delegate", "report_read", "report_list"]
+mcp = []
+
+[permissions]
+fs_read = []
+fs_write = []
+network = "none"
+
+[budget]
+max_steps = 20
+max_tokens = 100_000
+max_cost_usd = 2.0
+timeout_s = 900
+
+[delegation]
+can_delegate_to = ["researcher", "librarian"]

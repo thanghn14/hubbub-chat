@@ -1,0 +1,24 @@
+# Librarian Agent
+# Agent chuyên đọc và phân tích tài liệu cục bộ. Không có quyền truy cập mạng.
+
+id = "librarian"
+name = "Librarian Agent"
+model = "anthropic/claude-sonnet-4-20250514"
+
+[tools]
+builtin = ["fs_read", "fs_list", "report_write", "report_read"]
+mcp = []
+
+[permissions]
+fs_read = ["sources/**"]
+fs_write = ["notes/**"]
+network = "none"
+
+[budget]
+max_steps = 20
+max_tokens = 150_000
+max_cost_usd = 0.5
+timeout_s = 300
+
+[delegation]
+can_delegate_to = []

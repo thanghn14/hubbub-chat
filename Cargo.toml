@@ -1,0 +1,106 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/domain",
+    "crates/policy",
+    "crates/agent",
+    "crates/llm",
+    "crates/tools",
+    "crates/mcp",
+    "crates/store",
+    "crates/workspace",
+    "crates/vault",
+    "crates/app",
+    "crates/testkit",
+    "apps/desktop/src-tauri",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "LicenseRef-Proprietary"
+rust-version = "1.97"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+# unused_results = "warn"
+
+[workspace.lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+dbg_macro = "deny"
+await_holding_lock = "deny"
+large_futures = "warn"
+needless_pass_by_value = "warn"
+
+[workspace.dependencies]
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+tokio-util = "0.7"
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+
+# Database
+sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite"] }
+
+# HTTP
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream"] }
+
+# Error handling
+thiserror = "2"
+anyhow = "1"
+
+# Logging / Tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+tracing-appender = "0.2"
+
+# UUID
+uuid = { version = "1", features = ["v7", "serde"] }
+
+# Time
+time = { version = "0.3", features = ["serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Security
+keyring = "3"
+url = "2"
+ipnet = "2"
+
+# Crypto / Hashing
+sha2 = "0.10"
+blake3 = "1"
+
+# HTML processing
+scraper = "0.22"
+
+# MCP
+# rmcp = "0.1"  # Pin exact version when adding
+
+# File watching
+notify = "7"
+notify-debouncer-full = "0.4"
+
+# Code highlighting
+syntect = "5"
+
+# Async traits
+async-trait = "0.1"
+
+# Testing
+wiremock = "0.6"
+insta = { version = "1", features = ["json"] }
+proptest = "1"
+tempfile = "3"
+
+[profile.dev.package."*"]
+opt-level = 2
+
+[profile.release]
+lto = "thin"
+strip = true

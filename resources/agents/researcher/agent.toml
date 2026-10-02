@@ -1,0 +1,24 @@
+# Researcher Agent
+# Agent chuyên tìm kiếm web và tạo báo cáo nghiên cứu.
+
+id = "researcher"
+name = "Research Agent"
+model = "anthropic/claude-sonnet-4-20250514"
+
+[tools]
+builtin = ["web_search", "web_fetch", "report_write", "report_read", "report_list"]
+mcp = []
+
+[permissions]
+fs_read = []
+fs_write = ["reports/**"]
+network = "open"
+
+[budget]
+max_steps = 30
+max_tokens = 200_000
+max_cost_usd = 1.0
+timeout_s = 600
+
+[delegation]
+can_delegate_to = []

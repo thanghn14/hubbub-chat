@@ -1,0 +1,22 @@
+[package]
+name = "hubbub-workspace"
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+hubbub-domain = { path = "../domain" }
+hubbub-policy = { path = "../policy" }
+serde = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+notify = { workspace = true }
+tracing = { workspace = true }
+sha2 = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+

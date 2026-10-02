@@ -1,0 +1,14 @@
+[package]
+name = "hubbub-vault"
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+hubbub-domain = { path = "../domain" }
+thiserror = { workspace = true }
+keyring = { workspace = true }
+async-trait = { workspace = true }
+
