@@ -8,6 +8,38 @@ Sắp xếp theo thứ tự thời gian (mới nhất ở trên).
 
 ---
 
+## [2026-10-02] Hoàn thành Sprint 1.1: Database SQLite & Migrations (hubbub-store)
+
+**Bối cảnh:** Triển khai tầng lưu trữ dữ liệu bền vững (Persistence Layer) đầu tiên của Phase 1, tuân thủ nghiêm ngặt nguyên tắc **Test-First** và bao quát các **common edge cases** (tiếng Việt, FTS5 unicode, emoji, concurrent access).
+
+**Quyết định:**
+1. **Thiết lập Migration SQLite (`0001_initial_schema.sql`):**
+   - Bảng `conversations`: Khóa chính UUID v7, theo dõi thời gian `created_at` và `updated_at`, cờ `archived`.
+   - Bảng `messages`: Thiết kế append-only, liên kết khóa ngoại CASCADE với `conversations`, lưu trữ các khối nội dung (`parts_json`) hỗ trợ mở rộng.
+   - Bảng `runs` & `steps`: Lưu vết toàn diện vòng đời thực thi của Agent, chi phí token và thời gian chạy.
+   - Bảng `documents`: Lưu trữ metadata của các tài liệu Workspace dạng Markdown.
+   - Bảng ảo `messages_fts` & `documents_fts` (FTS5): Sử dụng bộ tách từ `unicode61` để hỗ trợ tìm kiếm toàn văn tiếng Việt có dấu.
+2. **Quy trình Test-First & Edge Cases:**
+   - Viết trước 10 test case trong `crates/store/tests/store_tests.rs`:
+     * Tiêu đề và nội dung chứa đầy đủ dấu tiếng Việt phức tạp.
+     * Emoji Unicode (🚀, 🎉) và khối mã nguồn Markdown.
+     * Bản tin báo cáo rất dài (~60 KB văn bản).
+     * Các trường hợp phân trang biên (`limit = 0`, `offset` vượt quá tổng số tin).
+     * Tìm kiếm toàn văn FTS5 tiếng Việt chính xác với cụm từ có dấu.
+     * Cập nhật tài liệu trùng đường dẫn (Upsert conflict resolution).
+     * Truy cập đồng thời đa luồng (10 tác vụ async ghi và đọc đồng thời trong chế độ SQLite WAL).
+3. **Triển khai `Store` Port:**
+   - Cài đặt trait `hubbub_domain::ports::store::Store` trong struct `SqliteStore`.
+   - Cấu hình SQLite Pool: Tự động kích hoạt `PRAGMA foreign_keys = ON;`, `journal_mode = WAL;`, `synchronous = NORMAL;`.
+   - Cung cấp `SqliteStore::open` cho production và `SqliteStore::open_in_memory` (shared cache) cho kiểm thử độc lập.
+4. **Kết quả nghiệm thu:** 10/10 test case vượt qua (0.06s), `cargo clippy -D warnings` đạt 100% không cảnh báo.
+
+**Hệ quả:** Hoàn tất Sprint 1.1. Sẵn sàng bước sang **Sprint 1.2: LLM Gateway & SSE Stream (`hubbub-llm`)**.
+
+**Trạng thái:** Đã áp dụng
+
+---
+
 ## [2026-10-02] Nghiệm thu Gate 0: Chốt Stack Tauri 2 + React + Rust Core
 
 **Bối cảnh:** Cần xác nhận kết quả kiểm thử thực tế về mức tiêu thụ RAM và hiệu năng của ứng dụng trên môi trường Windows 10/11 trước khi chuyển sang Phase 1.
