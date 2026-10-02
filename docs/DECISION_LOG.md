@@ -6,6 +6,36 @@ Sắp xếp theo thứ tự thời gian (mới nhất ở trên).
 > **QUY TẮC:** PR/commit có thay đổi quan trọng mà KHÔNG cập nhật file này sẽ bị reject.
 > Áp dụng cho cả Dev và Agent (AI).
 
+## [2026-10-02] Hoàn thành Sprint 1.6: React UI Chat MVP & Kết thúc Phase 1 (apps/desktop/src)
+
+**Bối cảnh:** Triển khai giao diện người dùng Desktop Chat MVP trên React 19 + TypeScript + Vite + Tailwind CSS (`apps/desktop/src`), kết nối trực tiếp với backend Rust Core thông qua Tauri 2 IPC commands và streaming events `run_event`. Mục tiêu là cung cấp trải nghiệm chat đa tác tử mượt mà, hỗ trợ bộ gõ tiếng Việt (IME), hiển thị thời gian thực các bước thực thi công cụ (tools), quản lý API keys an toàn (write-only), chuyển đổi tác tử (Agent Switcher), và duy trì Gate 0 Benchmark Spike phục vụ kiểm thử hiệu năng.
+
+**Quyết định:**
+1. **Thiết kế Cấu trúc Component Modularity & Giới hạn < 400 Dòng:**
+   - Phân tách giao diện thành các thành phần độc lập, chuyên biệt:
+     - `Sidebar.tsx`: Danh sách lịch sử hội thoại, Agent Switcher (Researcher, Librarian, Tutor), nút tạo chat mới, nút mở cài đặt và chuyển đổi Gate 0 Spike.
+     - `ChatView.tsx`: Danh sách tin nhắn với avatar phân biệt, hiển thị token delta streaming thời gian thực kèm con trỏ nhấp nháy, thẻ trạng thái thực thi công cụ (running/completed/failed), tự động cuộn xuống cuối (auto-scroll), và thanh soạn thảo (composer) tích hợp xử lý chống gửi sớm khi đang gõ IME tiếng Việt (`isComposing`).
+     - `SettingsModal.tsx`: Hộp thoại cấu hình API keys cho 5 nhà cung cấp (OpenAI, Anthropic, OpenRouter, Groq, Ollama) với cơ chế bảo mật Write-Only (chỉ gửi ghi xuống Vault, không đọc ngược lại giao diện).
+     - `BenchmarkSpike.tsx`: Tách toàn bộ module kiểm thử Gate 0 spike (kiểm tra gõ tiếng Việt, ảo hóa 1.000 tin nhắn qua `@tanstack/react-virtual`, mô phỏng stream 50t/s, Milkdown WYSIWYG editor) thành component riêng biệt.
+     - `App.tsx`: Điều phối trung tâm kết nối trạng thái (conversations, messages, active agent, streaming text, active tools) qua Tauri IPC commands (`list_conversations`, `create_conversation`, `list_messages`, `send_message`, `cancel_run`) và lắng nghe sự kiện `run_event`.
+2. **Xử lý An toàn Bộ gõ Tiếng Việt (IME Composition Guard):**
+   - Lắng nghe `onCompositionStart` và `onCompositionEnd` trên khung nhập liệu để ngăn chặn sự kiện phím Enter kích hoạt gửi tin nhắn khi người dùng đang gõ bỏ dấu tiếng Việt (UniKey / EVKey).
+3. **Cơ chế Streaming & Hiển thị Tác vụ Công cụ:**
+   - Lắng nghe sự kiện `run_event` từ `TauriEventSink`:
+     - `MessageDelta`: Tích lũy delta text vào khung phản hồi tức thời.
+     - `ToolStarted`: Hiển thị thẻ card trạng thái công cụ kèm spinner đang chạy.
+     - `ToolFinished`: Cập nhật trạng thái thành công/thất bại kèm tóm tắt kết quả.
+     - `RunFinished`: Đồng bộ lại tin nhắn hoàn chỉnh từ SQLite store và giải phóng trạng thái streaming.
+4. **Kết quả Nghiệm thu Toàn diện:**
+   - Frontend: `tsc -b && vite build` biên dịch thành công 0 lỗi. `oxlint` sạch 0 lỗi.
+   - Backend Rust: `cargo clippy --workspace --all-targets -- -D warnings` đạt 0 cảnh báo. `cargo fmt --all -- --check` đạt chuẩn 100%.
+   - Toàn bộ test suite repository đạt **36/36 tests PASS** (Store: 10, LLM: 7, Agent: 9, Vault: 5, App: 5).
+   - **Chính thức hoàn thành 100% Phase 1 (Chat MVP) qua toàn bộ 6 Sprints (1.1 -> 1.6).**
+
+**Hệ quả:** Hoàn tất Phase 1. Ứng dụng Hubbub đã có đầy đủ khung nền từ Database, LLM Gateway, Agent Runtime, Keyring Vault, Composition Root, cho đến Giao diện React Desktop hoàn chỉnh. Sẵn sàng bước sang **Phase 2: Tool System & Workspace**.
+
+**Trạng thái:** Đã áp dụng
+
 ---
 
 ## [2026-10-02] Hoàn thành Sprint 1.5: Composition Root & Desktop IPC Shell (hubbub-app & hubbub-desktop)
