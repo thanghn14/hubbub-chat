@@ -8,6 +8,41 @@ Sắp xếp theo thứ tự thời gian (mới nhất ở trên).
 
 ---
 
+## [2026-10-02] Hoàn thành Sprint 1.2: LLM Gateway & SSE Stream (hubbub-llm)
+
+**Bối cảnh:** Triển khai hạ tầng giao tiếp với các mô hình ngôn ngữ lớn (LLM Gateway) cho Phase 1, hỗ trợ cả hai chuẩn API phổ biến nhất hiện nay: OpenAI-compatible (OpenAI, Ollama, OpenRouter, Groq) và Anthropic Claude Messages API. Quy trình tuân thủ nghiêm ngặt **Test-First**, xử lý luồng stream SSE ở cấp byte để chống rách ký tự UTF-8, và đảm bảo khả năng tích lũy tool call streaming.
+
+**Quyết định:**
+1. **Byte-level SSE Stream Reader (`SseEventReader`):**
+   - Không parse từng chunk byte sang string ngay vì một byte split của mạng có thể cắt ngang một ký tự UTF-8 đa byte tiếng Việt (3 bytes) hoặc Emoji (4 bytes).
+   - Tích lũy byte stream vào buffer và chỉ tách dòng theo `\n`, sau đó mới decode UTF-8 và parse event SSE `data:`.
+2. **OpenAI-Compatible Adapter (`OpenAiCompatAdapter`):**
+   - Hỗ trợ streaming text deltas (`content`).
+   - Tích lũy streaming tool calls theo index (`accumulated_tool_calls` qua `BTreeMap`), tự động flush khi nhận `finish_reason: "tool_calls"`.
+   - Thu thập usage token (`prompt_tokens`, `completion_tokens`, `total_tokens`) từ chunk cuối cùng.
+   - Cơ chế Retry với Exponential Backoff (50ms * 2^(attempt-1)) đối với mã lỗi 5xx và 429; fail-fast ngay lập tức đối với lỗi xác thực (401/403).
+3. **Anthropic Adapter (`AnthropicAdapter`):**
+   - Chuyển đổi định dạng prompt: trích xuất riêng `system` message và ánh xạ các message còn lại thành `user`/`assistant`.
+   - Ánh xạ tool definitions thành định dạng `input_schema` của Anthropic.
+   - Hỗ trợ các event: `content_block_start` (tool_use), `content_block_delta` (text_delta, input_json_delta), `message_delta` (usage: output_tokens), `message_start` (usage: input_tokens).
+   - Tương tự OpenAI, áp dụng retry với backoff cho lỗi 5xx/429.
+4. **Quy trình Test-First với Wiremock:**
+   - 7/7 bài kiểm tra tích hợp trong `crates/llm/tests/llm_tests.rs`:
+     * Streaming text deltas & `[DONE]` marker.
+     * Streaming usage metadata token counts.
+     * Streaming tool call arguments accumulation across multiple chunks.
+     * Anthropic SSE events (tool_use block, text delta, input/output tokens).
+     * Tự động phục hồi khi gặp chunk SSE chứa JSON lỗi/rác mà không làm gián đoạn luồng stream.
+     * Retry thành công sau khi gặp 500 Internal Server Error.
+     * Dừng ngay lập tức (fail-fast, không retry vô nghĩa) khi nhận mã lỗi 401 Unauthorized.
+5. **Kết quả nghiệm thu:** 100% test case vượt qua (7/7 tests, 0.07s), `cargo clippy -D warnings` đạt 0 cảnh báo, `cargo fmt` chuẩn hóa.
+
+**Hệ quả:** Hoàn tất Sprint 1.2. Sẵn sàng bước sang **Sprint 1.3: Agent Runtime Core v1 (`hubbub-agent`)**.
+
+**Trạng thái:** Đã áp dụng
+
+---
+
 ## [2026-10-02] Hoàn thành Sprint 1.1: Database SQLite & Migrations (hubbub-store)
 
 **Bối cảnh:** Triển khai tầng lưu trữ dữ liệu bền vững (Persistence Layer) đầu tiên của Phase 1, tuân thủ nghiêm ngặt nguyên tắc **Test-First** và bao quát các **common edge cases** (tiếng Việt, FTS5 unicode, emoji, concurrent access).
