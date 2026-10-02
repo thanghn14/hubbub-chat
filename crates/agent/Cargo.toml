@@ -19,3 +19,7 @@ uuid = { workspace = true }
 chrono = { workspace = true }
 tracing = { workspace = true }
 
+[dev-dependencies]
+hubbub-testkit = { path = "../testkit" }
+hubbub-store = { path = "../store" }
+

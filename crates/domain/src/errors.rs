@@ -2,7 +2,7 @@
 
 use thiserror::Error;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub enum DomainError {
     #[error("Entity not found: {entity_type} with id {id}")]
     NotFound {

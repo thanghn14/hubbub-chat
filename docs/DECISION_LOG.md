@@ -8,6 +8,35 @@ Sắp xếp theo thứ tự thời gian (mới nhất ở trên).
 
 ---
 
+## [2026-10-02] Hoàn thành Sprint 1.3: Agent Runtime Core v1 (hubbub-agent & hubbub-testkit)
+
+**Bối cảnh:** Triển khai lõi điều phối Agent (Agent Runtime Loop) trong `hubbub-agent` theo kiến trúc Clean Monolith. Agent crate chỉ phụ thuộc vào `domain` ports, độc lập hoàn toàn với I/O crate. Cần một bộ công cụ kiểm thử test-first (`hubbub-testkit`) mô phỏng LLM và công cụ độc lập, hỗ trợ hủy tác vụ an toàn bằng `CancellationToken`, kiểm soát ngân sách chạy (`BudgetTracker`), và kiểm thử toàn diện các tình huống biên (common edge cases).
+
+**Quyết định:**
+1. **Xây dựng Testkit Fixtures (`hubbub-testkit`):**
+   - `FakeLlm`: Cài đặt `LlmProvider` cho phép nạp trước các phản hồi kịch bản (text deltas, tool calls, token usage, độ trễ chunk giả lập để test hủy luồng, lỗi mô phỏng).
+   - `InMemoryEventSink`: Cài đặt `EventSink` thu thập toàn bộ sự kiện `RunEvent` phát ra cho giao diện UI.
+   - `MockToolHost`: Cài đặt `ToolHost` cho phép đăng ký mock tool có độ trễ hoặc trả về lỗi, phục vụ kiểm thử phục hồi và hủy tác vụ.
+2. **Quản lý Ngữ cảnh & Lời nhắc (`ContextBuilder`):**
+   - Tự động bổ sung thời gian hiện tại (UTC) và chỉ thị ngôn ngữ (ưu tiên tiếng Việt chuẩn xác khi người dùng dùng tiếng Việt).
+   - Ánh xạ lịch sử tin nhắn `Message` (với các phần `Text`, `ToolCall`, `ToolResult`) sang định dạng `LlmMessage` chuẩn.
+3. **Giám sát Ngân sách Chạy (`BudgetTracker`):**
+   - Thực thi kiểm tra giới hạn `max_steps`, `max_tokens`, và `timeout_s` tại mỗi bước trong vòng lặp.
+   - Khi vượt ngưỡng, cập nhật trạng thái Run thành `Failed`, phát sự kiện `RunEvent::Error` và dừng vòng lặp an toàn, không bao giờ rơi vào vòng lặp vô tận.
+4. **Vòng lặp Điều phối Chính (`AgentRuntime`):**
+   - Tích hợp `CancellationToken` tại mọi điểm chờ bất đồng bộ (trước khi gọi LLM, trong khi stream từng chunk LLM, và trong khi thực thi tool).
+   - Ghi nhận đầy đủ vòng đời của `Run` và các `Step` (loại `Llm` và `Tool`) vào `Store`.
+   - Phục hồi có cấu trúc khi công cụ trả về lỗi (gửi kết quả lỗi về LLM để LLM phản hồi giải thích hoặc sửa sai).
+5. **Cải tiến `Store::create_step`:**
+   - Bổ sung `ON CONFLICT(id) DO UPDATE` trong SQLite để hỗ trợ cập nhật trạng thái bước thực thi từ `running` sang `completed`/`failed` kèm `duration_ms` và `output_json`.
+6. **Kết quả nghiệm thu:** 9/9 test case trong `crates/agent/tests/runtime_tests.rs` vượt qua 100%. Toàn bộ test suite toàn repo: 26/26 tests PASS, `cargo clippy -D warnings` đạt 0 cảnh báo, `cargo fmt` đạt chuẩn.
+
+**Hệ quả:** Hoàn tất Sprint 1.3. Sẵn sàng bước sang **Sprint 1.4: Keyring Vault (`hubbub-vault`)**.
+
+**Trạng thái:** Đã áp dụng
+
+---
+
 ## [2026-10-02] Hoàn thành Sprint 1.2: LLM Gateway & SSE Stream (hubbub-llm)
 
 **Bối cảnh:** Triển khai hạ tầng giao tiếp với các mô hình ngôn ngữ lớn (LLM Gateway) cho Phase 1, hỗ trợ cả hai chuẩn API phổ biến nhất hiện nay: OpenAI-compatible (OpenAI, Ollama, OpenRouter, Groq) và Anthropic Claude Messages API. Quy trình tuân thủ nghiêm ngặt **Test-First**, xử lý luồng stream SSE ở cấp byte để chống rách ký tự UTF-8, và đảm bảo khả năng tích lũy tool call streaming.

@@ -161,6 +161,10 @@ pub async fn create_step(pool: &SqlitePool, step: &Step) -> Result<(), StoreErro
         r#"
         INSERT INTO steps (id, run_id, idx, kind, input_json, output_json, status, duration_ms, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+            status = excluded.status,
+            output_json = excluded.output_json,
+            duration_ms = excluded.duration_ms
         "#,
     )
     .bind(id_str)
