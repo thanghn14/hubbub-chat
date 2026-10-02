@@ -8,6 +8,33 @@ Sắp xếp theo thứ tự thời gian (mới nhất ở trên).
 
 ---
 
+## [2026-10-02] Hoàn thành Sprint 1.5: Composition Root & Desktop IPC Shell (hubbub-app & hubbub-desktop)
+
+**Bối cảnh:** Triển khai tầng ứng dụng cốt lõi (`hubbub-app`) đóng vai trò Composition Root kết nối toàn bộ các Ports và Adapters đã xây dựng (`SqliteStore`, `KeyringVault`, `AgentRuntime`, `BuiltinToolHost`, `OpenAiCompatAdapter`, `AnthropicAdapter`). Đồng thời hoàn thiện lớp Tauri IPC Commands (`apps/desktop/src-tauri`) và bộ chuyển tiếp sự kiện streaming `TauriEventSink` để giao diện người dùng có thể kích hoạt các tác vụ chat đa tác tử an toàn.
+
+**Quyết định:**
+1. **Thiết lập Cấu hình Ứng dụng (`AppConfig`):**
+   - Quản lý đường dẫn Workspace, provider mặc định, agent mặc định, và cấu hình chi tiết cho 5 nhà cung cấp: OpenAI, Anthropic, Ollama, OpenRouter, Groq.
+   - Hỗ trợ lưu trữ và nạp tự động qua định dạng file `config.toml`.
+2. **Triển khai Composition Root (`AppService`):**
+   - Khởi tạo và liên kết các thành phần độc lập thành một dịch vụ đồng nhất (`init`), tự động nạp cơ sở dữ liệu SQLite tại thư mục workspace và kết nối kho bảo mật `KeyringVault`.
+   - Cung cấp facade quản lý hội thoại (`create_conversation`, `list_conversations`, `get_conversation`, `list_messages`).
+   - Cung cấp facade bảo mật API key (write-only: `set_provider_key`, `has_provider_key`, `delete_provider_key`).
+   - Tích hợp điều phối Agent Run với cơ chế đăng ký và hủy tác vụ qua `CancellationToken` (`send_message`, `cancel_run`).
+3. **Cung cấp Bộ Agent Mặc định (`seed.rs`):**
+   - Tích hợp 3 agent cốt lõi sẵn dùng: `researcher` (Nghiên cứu & Web Search), `librarian` (Quản lý file nội bộ, ngắt kết nối mạng), và `tutor` (Gia sư học tập).
+4. **Xây dựng Shell IPC Tauri (`commands.rs` & `events.rs`):**
+   - Lớp Tauri shell tuân thủ tiêu chí "thin shell": chỉ đảm nhiệm định tuyến IPC và chuyển phát sự kiện, không chứa business logic.
+   - `TauriEventSink`: Chuyển phát tức thời các sự kiện `RunEvent` (bao gồm `MessageDelta`, `ToolStarted`, `ToolFinished`, `RunFinished`) về frontend qua Tauri Event `run_event`.
+   - Đăng ký đầy đủ 12 Tauri Commands: `health_check`, `get_version`, `list_conversations`, `create_conversation`, `get_conversation`, `list_messages`, `list_agents`, `set_provider_key`, `has_provider_key`, `delete_provider_key`, `send_message`, `cancel_run`.
+5. **Kết quả nghiệm thu:** 5/5 test case trong `crates/app/tests/app_tests.rs` vượt qua 100%. Toàn bộ test suite toàn repo đạt **36/36 tests PASS**, `cargo clippy -D warnings` đạt 0 cảnh báo, `cargo fmt` chuẩn hóa, `tsc -b && vite build` và `oxlint` sạch lỗi.
+
+**Hệ quả:** Hoàn tất Sprint 1.5. Sẵn sàng bước sang **Sprint 1.6: Hoàn thiện Giao diện React UI Chat MVP**.
+
+**Trạng thái:** Đã áp dụng
+
+---
+
 ## [2026-10-02] Hoàn thành Sprint 1.4: Keyring Vault (hubbub-vault)
 
 **Bối cảnh:** Triển khai hạ tầng lưu trữ bí mật (API keys, credentials) an toàn cho ứng dụng trong `hubbub-vault`, cài đặt trait `SecretStore` từ `hubbub-domain`. Tuân thủ nghiêm ngặt nguyên tắc **Không lưu trữ plaintext trên đĩa**, sử dụng kho bảo mật bản địa của hệ điều hành (**Windows Credential Manager**), chạy bất đồng bộ an toàn qua `spawn_blocking`, và đảm bảo thông điệp lỗi tuyệt đối không làm lộ giá trị bí mật.
