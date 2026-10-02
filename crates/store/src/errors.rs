@@ -1,5 +1,5 @@
-use thiserror::Error;
 use hubbub_domain::errors::DomainError;
+use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum StoreError {

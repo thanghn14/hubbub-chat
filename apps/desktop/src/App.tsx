@@ -929,10 +929,11 @@ function ScorecardTab({
 
   const passedCount = Object.values(checklist).filter((v) => v === true).length;
   const isAllPassed = Object.values(checklist).every((v) => v === true);
+  const [todayDate] = useState(() => new Date().toLocaleDateString('vi-VN'));
 
   const reportMarkdown = useMemo(() => {
     return `# GATE 0 VALIDATION REPORT — HUBBUB
-Ngày kiểm thử: ${new Date().toLocaleDateString('vi-VN')}
+Ngày kiểm thử: ${todayDate}
 Kết luận: ${isAllPassed ? 'CHẤP THUẬN TAURI 2 + REACT' : 'ĐANG THEO DÕI / CHƯA ĐẠT'}
 
 | STT | Tiêu chí Gate 0 | Trạng thái | Ghi chú |
@@ -949,7 +950,7 @@ ${
     : '==> Cần kiểm tra kỹ các tiêu chí chưa đạt trước khi chuyển sang Phase 1.'
 }
 `;
-  }, [checklist, isAllPassed]);
+  }, [checklist, isAllPassed, todayDate]);
 
   const copyReport = () => {
     navigator.clipboard.writeText(reportMarkdown);

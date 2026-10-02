@@ -1,6 +1,6 @@
-use std::str::FromStr;
-use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, SqliteSynchronous};
 use sqlx::SqlitePool;
+use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, SqliteSynchronous};
+use std::str::FromStr;
 use uuid::Uuid;
 
 use crate::errors::StoreError;
@@ -41,8 +41,6 @@ pub async fn create_in_memory_pool() -> Result<SqlitePool, StoreError> {
 }
 
 pub async fn run_migrations(pool: &SqlitePool) -> Result<(), StoreError> {
-    sqlx::migrate!("./migrations")
-        .run(pool)
-        .await?;
+    sqlx::migrate!("./migrations").run(pool).await?;
     Ok(())
 }

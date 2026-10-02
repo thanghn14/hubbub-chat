@@ -16,6 +16,11 @@ export const MilkdownEditor: React.FC<MilkdownEditorProps> = ({
   const editorRef = useRef<HTMLDivElement>(null);
   const [isReady, setIsReady] = useState(false);
   const [content, setContent] = useState(initialContent);
+  const onChangeRef = useRef(onChange);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+  const initialContentRef = useRef(initialContent);
 
   useEffect(() => {
     if (!editorRef.current) return;
@@ -26,11 +31,11 @@ export const MilkdownEditor: React.FC<MilkdownEditorProps> = ({
     Editor.make()
       .config((ctx) => {
         ctx.set(rootCtx, editorRef.current);
-        ctx.set(defaultValueCtx, content);
+        ctx.set(defaultValueCtx, initialContentRef.current);
         ctx.get(listenerCtx).markdownUpdated((_ctx, markdown) => {
           if (!destroyed) {
             setContent(markdown);
-            onChange?.(markdown);
+            onChangeRef.current?.(markdown);
           }
         });
       })

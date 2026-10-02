@@ -10,7 +10,10 @@ pub enum RunEvent {
     MessageDelta { content: String },
 
     /// A tool execution has started.
-    ToolStarted { tool_name: String, args_preview: String },
+    ToolStarted {
+        tool_name: String,
+        args_preview: String,
+    },
 
     /// User approval is required to proceed.
     ApprovalRequired {

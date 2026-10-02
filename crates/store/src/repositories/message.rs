@@ -2,8 +2,8 @@ use chrono::{DateTime, Utc};
 use sqlx::{Row, SqlitePool};
 use uuid::Uuid;
 
-use hubbub_domain::entities::conversation::{Message, MessagePart, MessageRole};
 use crate::errors::StoreError;
+use hubbub_domain::entities::conversation::{Message, MessagePart, MessageRole};
 
 pub async fn append(pool: &SqlitePool, msg: &Message) -> Result<(), StoreError> {
     let id_str = msg.id.to_string();

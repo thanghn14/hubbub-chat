@@ -2,8 +2,8 @@ use chrono::{DateTime, Utc};
 use sqlx::{Row, SqlitePool};
 use uuid::Uuid;
 
-use hubbub_domain::entities::document::Document;
 use crate::errors::StoreError;
+use hubbub_domain::entities::document::Document;
 
 pub async fn upsert(pool: &SqlitePool, doc: &Document) -> Result<(), StoreError> {
     let id_str = doc.id.to_string();

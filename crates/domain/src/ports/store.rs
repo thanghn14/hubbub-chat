@@ -1,8 +1,8 @@
-use async_trait::async_trait;
-use crate::errors::DomainError;
 use crate::entities::conversation::{Conversation, Message};
-use crate::entities::run::{Run, Step};
 use crate::entities::document::Document;
+use crate::entities::run::{Run, Step};
+use crate::errors::DomainError;
+use async_trait::async_trait;
 use uuid::Uuid;
 
 /// Port for persistent storage operations.
@@ -16,8 +16,12 @@ pub trait Store: Send + Sync {
 
     // Messages
     async fn append_message(&self, msg: &Message) -> Result<(), DomainError>;
-    async fn list_messages(&self, conversation_id: Uuid, limit: u32, offset: u32)
-        -> Result<Vec<Message>, DomainError>;
+    async fn list_messages(
+        &self,
+        conversation_id: Uuid,
+        limit: u32,
+        offset: u32,
+    ) -> Result<Vec<Message>, DomainError>;
 
     // Runs
     async fn create_run(&self, run: &Run) -> Result<(), DomainError>;

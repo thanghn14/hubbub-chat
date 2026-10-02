@@ -2,8 +2,8 @@ use chrono::{DateTime, Utc};
 use sqlx::{Row, SqlitePool};
 use uuid::Uuid;
 
-use hubbub_domain::entities::run::{Run, RunStatus, Step, StepKind, StepStatus, UsageInfo};
 use crate::errors::StoreError;
+use hubbub_domain::entities::run::{Run, RunStatus, Step, StepKind, StepStatus, UsageInfo};
 
 pub async fn create_run(pool: &SqlitePool, run: &Run) -> Result<(), StoreError> {
     let id_str = run.id.to_string();
@@ -91,13 +91,13 @@ pub async fn get_run(pool: &SqlitePool, id: Uuid) -> Result<Option<Run>, StoreEr
 
             let parsed_id = Uuid::parse_str(&id)
                 .map_err(|e| StoreError::InvalidData(format!("Invalid UUID: {e}")))?;
-            let conversation_id = Uuid::parse_str(&conv_id)
-                .map_err(|e| StoreError::InvalidData(format!("Invalid conversation_id UUID: {e}")))?;
+            let conversation_id = Uuid::parse_str(&conv_id).map_err(|e| {
+                StoreError::InvalidData(format!("Invalid conversation_id UUID: {e}"))
+            })?;
             let parent_run_id = match parent_run_id_str {
-                Some(s) => Some(
-                    Uuid::parse_str(&s)
-                        .map_err(|e| StoreError::InvalidData(format!("Invalid parent_run_id UUID: {e}")))?,
-                ),
+                Some(s) => Some(Uuid::parse_str(&s).map_err(|e| {
+                    StoreError::InvalidData(format!("Invalid parent_run_id UUID: {e}"))
+                })?),
                 None => None,
             };
             let status = str_to_run_status(&status_str)?;
@@ -212,7 +212,11 @@ pub async fn list_steps(pool: &SqlitePool, run_id: Uuid) -> Result<Vec<Step>, St
             "llm" => StepKind::Llm,
             "tool" => StepKind::Tool,
             "approval" => StepKind::Approval,
-            other => return Err(StoreError::InvalidData(format!("Unknown step kind: {other}"))),
+            other => {
+                return Err(StoreError::InvalidData(format!(
+                    "Unknown step kind: {other}"
+                )));
+            }
         };
         let input: serde_json::Value = serde_json::from_str(&input_json)?;
         let output: Option<serde_json::Value> = match output_json {
@@ -224,7 +228,11 @@ pub async fn list_steps(pool: &SqlitePool, run_id: Uuid) -> Result<Vec<Step>, St
             "completed" => StepStatus::Completed,
             "failed" => StepStatus::Failed,
             "cancelled" => StepStatus::Cancelled,
-            other => return Err(StoreError::InvalidData(format!("Unknown step status: {other}"))),
+            other => {
+                return Err(StoreError::InvalidData(format!(
+                    "Unknown step status: {other}"
+                )));
+            }
         };
         let created_at = DateTime::parse_from_rfc3339(&created_at_str)
             .map_err(|e| StoreError::InvalidData(format!("Invalid created_at: {e}")))?
@@ -265,6 +273,8 @@ fn str_to_run_status(s: &str) -> Result<RunStatus, StoreError> {
         "completed" => Ok(RunStatus::Completed),
         "failed" => Ok(RunStatus::Failed),
         "cancelled" => Ok(RunStatus::Cancelled),
-        other => Err(StoreError::InvalidData(format!("Unknown run status: {other}"))),
+        other => Err(StoreError::InvalidData(format!(
+            "Unknown run status: {other}"
+        ))),
     }
 }

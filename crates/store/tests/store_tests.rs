@@ -27,7 +27,10 @@ async fn test_create_and_get_conversation_with_vietnamese_diacritics() {
         archived: false,
     };
 
-    store.create_conversation(&conv).await.expect("Failed to create conversation");
+    store
+        .create_conversation(&conv)
+        .await
+        .expect("Failed to create conversation");
 
     let retrieved = store
         .get_conversation(id)
@@ -84,10 +87,19 @@ async fn test_conversation_list_and_update() {
         archived: false,
     };
 
-    store.create_conversation(&conv1).await.expect("create conv1");
-    store.create_conversation(&conv2).await.expect("create conv2");
+    store
+        .create_conversation(&conv1)
+        .await
+        .expect("create conv1");
+    store
+        .create_conversation(&conv2)
+        .await
+        .expect("create conv2");
 
-    let list = store.list_conversations().await.expect("list conversations");
+    let list = store
+        .list_conversations()
+        .await
+        .expect("list conversations");
     assert_eq!(list.len(), 2);
 
     // Test update (e.g. archive conversation 1)
@@ -100,7 +112,10 @@ async fn test_conversation_list_and_update() {
         archived: true,
     };
 
-    store.update_conversation(&updated_conv1).await.expect("update conv1");
+    store
+        .update_conversation(&updated_conv1)
+        .await
+        .expect("update conv1");
 
     let retrieved = store
         .get_conversation(id1)
@@ -199,7 +214,11 @@ async fn test_message_pagination_edge_cases() {
             id: Uuid::now_v7(),
             conversation_id: conv_id,
             run_id: None,
-            role: if i % 2 == 1 { MessageRole::User } else { MessageRole::Assistant },
+            role: if i % 2 == 1 {
+                MessageRole::User
+            } else {
+                MessageRole::Assistant
+            },
             parts: vec![MessagePart::Text(format!("Message number {i}"))],
             created_at: now,
         };
@@ -219,11 +238,17 @@ async fn test_message_pagination_edge_cases() {
     assert_eq!(p3.len(), 5);
 
     // Edge case 1: offset beyond total count -> returns empty vector (no panic)
-    let p_empty = store.list_messages(conv_id, 5, 20).await.expect("empty page");
+    let p_empty = store
+        .list_messages(conv_id, 5, 20)
+        .await
+        .expect("empty page");
     assert!(p_empty.is_empty());
 
     // Edge case 2: limit 0 -> returns empty vector (no panic)
-    let p_zero_limit = store.list_messages(conv_id, 0, 0).await.expect("zero limit");
+    let p_zero_limit = store
+        .list_messages(conv_id, 0, 0)
+        .await
+        .expect("zero limit");
     assert!(p_zero_limit.is_empty());
 }
 
@@ -258,9 +283,15 @@ async fn test_very_long_message_report() {
         created_at: now,
     };
 
-    store.append_message(&msg).await.expect("append long message");
+    store
+        .append_message(&msg)
+        .await
+        .expect("append long message");
 
-    let messages = store.list_messages(conv_id, 1, 0).await.expect("list messages");
+    let messages = store
+        .list_messages(conv_id, 1, 0)
+        .await
+        .expect("list messages");
     assert_eq!(messages.len(), 1);
 
     match &messages[0].parts[0] {
@@ -294,7 +325,8 @@ async fn test_fts5_search_messages_vietnamese() {
         run_id: None,
         role: MessageRole::Assistant,
         parts: vec![MessagePart::Text(
-            "Quần đảo Hoàng Sa và Trường Sa là một phần máu thịt thiêng liêng của Việt Nam.".to_string(),
+            "Quần đảo Hoàng Sa và Trường Sa là một phần máu thịt thiêng liêng của Việt Nam."
+                .to_string(),
         )],
         created_at: now,
     };
@@ -314,17 +346,26 @@ async fn test_fts5_search_messages_vietnamese() {
     store.append_message(&msg2).await.expect("msg2");
 
     // Search query for "Hoàng Sa"
-    let results1 = store.search_messages("Hoàng Sa").await.expect("search Hoàng Sa");
+    let results1 = store
+        .search_messages("Hoàng Sa")
+        .await
+        .expect("search Hoàng Sa");
     assert_eq!(results1.len(), 1);
     assert_eq!(results1[0].id, msg1.id);
 
     // Search query for "khoa học"
-    let results2 = store.search_messages("khoa học").await.expect("search khoa học");
+    let results2 = store
+        .search_messages("khoa học")
+        .await
+        .expect("search khoa học");
     assert_eq!(results2.len(), 1);
     assert_eq!(results2[0].id, msg2.id);
 
     // Search query with no match
-    let results3 = store.search_messages("KhôngTồnTại123").await.expect("search none");
+    let results3 = store
+        .search_messages("KhôngTồnTại123")
+        .await
+        .expect("search none");
     assert!(results3.is_empty());
 }
 
@@ -415,7 +456,11 @@ async fn test_runs_and_steps_lifecycle() {
 
     store.update_run(&updated_run).await.expect("update run");
 
-    let retrieved_run = store.get_run(run_id).await.expect("get run").expect("found run");
+    let retrieved_run = store
+        .get_run(run_id)
+        .await
+        .expect("get run")
+        .expect("found run");
     assert_eq!(retrieved_run.status, RunStatus::Completed);
     assert_eq!(retrieved_run.cost_usd, Some(0.0085));
     assert_eq!(retrieved_run.usage.expect("usage").total_tokens, 1650);
@@ -434,7 +479,11 @@ async fn test_documents_upsert_and_fts_search() {
         id: doc_id,
         path: "reports/ai_research_2026.md".to_string(),
         title: "Báo Cáo Nghiên Cứu AI và Deep Learning 2026".to_string(),
-        tags: vec!["ai".to_string(), "research".to_string(), "deep-learning".to_string()],
+        tags: vec![
+            "ai".to_string(),
+            "research".to_string(),
+            "deep-learning".to_string(),
+        ],
         agent_id: Some("researcher".to_string()),
         run_id: None,
         content_hash: "hash123456789".to_string(),
@@ -450,7 +499,10 @@ async fn test_documents_upsert_and_fts_search() {
     assert_eq!(docs[0].path, "reports/ai_research_2026.md");
 
     // Search document
-    let found = store.search_documents("Nghiên Cứu AI").await.expect("search doc");
+    let found = store
+        .search_documents("Nghiên Cứu AI")
+        .await
+        .expect("search doc");
     assert_eq!(found.len(), 1);
     assert_eq!(found[0].id, doc_id);
 
@@ -468,11 +520,17 @@ async fn test_documents_upsert_and_fts_search() {
         updated_at: Utc::now(),
     };
 
-    store.upsert_document(&doc_updated).await.expect("upsert doc update");
+    store
+        .upsert_document(&doc_updated)
+        .await
+        .expect("upsert doc update");
 
     let docs_after = store.list_documents().await.expect("list docs after");
     assert_eq!(docs_after.len(), 1); // Still 1 document
-    assert_eq!(docs_after[0].title, "Báo Cáo Nghiên Cứu AI và Deep Learning 2026 (Bản sửa đổi)");
+    assert_eq!(
+        docs_after[0].title,
+        "Báo Cáo Nghiên Cứu AI và Deep Learning 2026 (Bản sửa đổi)"
+    );
     assert_eq!(docs_after[0].size_bytes, 5120);
 }
 
@@ -518,6 +576,9 @@ async fn test_concurrent_reads_and_writes_wal() {
         handle.await.expect("task join").expect("append message");
     }
 
-    let messages = store.list_messages(conv_id, 50, 0).await.expect("list messages");
+    let messages = store
+        .list_messages(conv_id, 50, 0)
+        .await
+        .expect("list messages");
     assert_eq!(messages.len(), 10);
 }

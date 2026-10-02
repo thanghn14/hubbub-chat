@@ -1,5 +1,5 @@
-use async_trait::async_trait;
 use crate::errors::DomainError;
+use async_trait::async_trait;
 
 /// Port for tool execution.
 #[async_trait]

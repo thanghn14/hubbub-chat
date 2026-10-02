@@ -2,8 +2,8 @@ use chrono::{DateTime, Utc};
 use sqlx::{Row, SqlitePool};
 use uuid::Uuid;
 
-use hubbub_domain::entities::conversation::Conversation;
 use crate::errors::StoreError;
+use hubbub_domain::entities::conversation::Conversation;
 
 pub async fn create(pool: &SqlitePool, conv: &Conversation) -> Result<(), StoreError> {
     let id_str = conv.id.to_string();
