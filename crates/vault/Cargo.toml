@@ -9,6 +9,18 @@ workspace = true
 [dependencies]
 hubbub-domain = { path = "../domain" }
 thiserror = { workspace = true }
-keyring = { workspace = true }
 async-trait = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
 
+[target.'cfg(target_os = "windows")'.dependencies]
+keyring = { workspace = true, features = ["windows-native"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { workspace = true, features = ["apple-native"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+keyring = { workspace = true, features = ["sync-secret-service"] }
+
+[dev-dependencies]
+uuid = { workspace = true }

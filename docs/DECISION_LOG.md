@@ -8,6 +8,28 @@ Sắp xếp theo thứ tự thời gian (mới nhất ở trên).
 
 ---
 
+## [2026-10-02] Hoàn thành Sprint 1.4: Keyring Vault (hubbub-vault)
+
+**Bối cảnh:** Triển khai hạ tầng lưu trữ bí mật (API keys, credentials) an toàn cho ứng dụng trong `hubbub-vault`, cài đặt trait `SecretStore` từ `hubbub-domain`. Tuân thủ nghiêm ngặt nguyên tắc **Không lưu trữ plaintext trên đĩa**, sử dụng kho bảo mật bản địa của hệ điều hành (**Windows Credential Manager**), chạy bất đồng bộ an toàn qua `spawn_blocking`, và đảm bảo thông điệp lỗi tuyệt đối không làm lộ giá trị bí mật.
+
+**Quyết định:**
+1. **Cấu hình Native Backend cho Crate `keyring`:**
+   - Kích hoạt tính năng native theo từng hệ điều hành: `windows-native` (Windows Credential Manager), `apple-native` (macOS Keychain), và `sync-secret-service` (Linux Secret Service).
+2. **Triển khai `KeyringVault` với `tokio::task::spawn_blocking`:**
+   - Các API hệ điều hành như `CredRead`, `CredWrite`, `CredDelete` là các hàm C/Windows API đồng bộ và có khả năng đọc/ghi đĩa. Đưa các lời gọi này vào `spawn_blocking` giúp bảo vệ vòng lặp Tokio worker threads không bị gián đoạn.
+   - Xử lý mượt mà trường hợp xóa idempotent (xóa key không tồn tại vẫn trả về `Ok(())` thay vì trả lỗi).
+3. **Triển khai `InMemoryVault`:**
+   - Cung cấp triển khai dựa trên `Arc<RwLock<HashMap<String, String>>>` phục vụ các môi trường kiểm thử tự động (CI / test suite) và headless mà không làm ô nhiễm kho chứng chỉ thực của người dùng.
+4. **Bảo mật An Toàn Thông Điệp Lỗi (`VaultError`):**
+   - Định dạng lỗi chỉ hiển thị tên `key` và thông báo mã lỗi từ OS, **tuyệt đối không bao giờ chứa giá trị bí mật** (`value`).
+5. **Kết quả nghiệm thu:** 5/5 test case trong `crates/vault/tests/vault_tests.rs` vượt qua 100% (bao gồm CRUD trên Windows Credential Manager thật, kiểm thử concurrent access, tiếng Việt có dấu và emoji trong key/secret, và kiểm tra không rò rỉ secret qua error log). Toàn bộ 31/31 tests toàn repo PASS, clippy 0 warning, fmt chuẩn hóa.
+
+**Hệ quả:** Hoàn tất Sprint 1.4. Sẵn sàng bước sang **Sprint 1.5: Composition Root & App Layer (`hubbub-app` & Tauri Commands)**.
+
+**Trạng thái:** Đã áp dụng
+
+---
+
 ## [2026-10-02] Hoàn thành Sprint 1.3: Agent Runtime Core v1 (hubbub-agent & hubbub-testkit)
 
 **Bối cảnh:** Triển khai lõi điều phối Agent (Agent Runtime Loop) trong `hubbub-agent` theo kiến trúc Clean Monolith. Agent crate chỉ phụ thuộc vào `domain` ports, độc lập hoàn toàn với I/O crate. Cần một bộ công cụ kiểm thử test-first (`hubbub-testkit`) mô phỏng LLM và công cụ độc lập, hỗ trợ hủy tác vụ an toàn bằng `CancellationToken`, kiểm soát ngân sách chạy (`BudgetTracker`), và kiểm thử toàn diện các tình huống biên (common edge cases).
