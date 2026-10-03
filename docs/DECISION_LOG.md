@@ -6,6 +6,31 @@ Sắp xếp theo thứ tự thời gian (mới nhất ở trên).
 > **QUY TẮC:** PR/commit có thay đổi quan trọng mà KHÔNG cập nhật file này sẽ bị reject.
 > Áp dụng cho cả Dev và Agent (AI).
 
+## [2026-10-03] Tái thiết kế Giao diện Chat theo phong cách Gemini/Antigravity & Tối ưu Chất lượng Phản hồi
+
+**Bối cảnh:** 
+1. Người dùng yêu cầu thay đổi thiết kế giao diện chat: Không muốn hiển thị dạng 2 bong bóng tin nhắn đối thoại thông thường (kiểu SMS). Tin nhắn người dùng hiển thị dạng box message bên phải, còn phản hồi của Agent hiển thị trực tiếp trên nền canvas tự nhiên giống giao diện Google Gemini hoặc Antigravity.
+2. Nội dung trả lời của Agent trước đó bị cắt ngắn do ngữ cảnh lịch sử tồn tại các tin rỗng hoặc tin nhắn người dùng liên tiếp gây nhiễu luồng đàm thoại của LLM, đồng thời system prompt cần chỉ thị chi tiết về việc cung cấp câu trả lời hoàn chỉnh.
+
+**Quyết định & Triển khai:**
+1. **Tái thiết kế Giao diện Chat (`apps/desktop/src/components/ChatView.tsx`):**
+   - **Tin nhắn Người dùng:** Hiển thị dạng box message gọn gàng, bo góc hiện đại (`rounded-2xl rounded-tr-xs`), nằm lệch bên phải (`ml-auto`), nền `bg-zinc-800` với viền tinh tế.
+   - **Phản hồi của Tác tử (Agent):** Bỏ hoàn toàn khung viền và hộp nền bao quanh. Hiển thị văn bản trực tiếp trên nền tối (`bg-transparent`), độ rộng đọc tối ưu (`max-w-4xl`), căn lề chuẩn xác kèm biểu tượng avatar tác tử và tên gọi ở đầu.
+   - **Tích hợp Bộ hiển thị Markdown Chuyên sâu (`MarkdownContent.tsx`):** Sử dụng `react-markdown` + `remark-gfm` định dạng tiêu đề (h1-h3), khối mã nguồn code block (syntax card), bảng biểu (tables), trích dẫn (blockquotes), và danh sách.
+   - **Tách Component Chuẩn Quy tắc < 400 Dòng:** Tách `MarkdownContent.tsx` (96 dòng) giúp `ChatView.tsx` đạt 371 dòng (đáp ứng nghiêm ngặt quy định `< 400 lines`).
+2. **Tối ưu Ngữ cảnh & Đảm bảo Tính Toàn vẹn Câu trả lời (`crates/agent/src/context.rs`, `seed.rs`):**
+   - Chuẩn hóa lượt đàm thoại trong `ContextBuilder`: Tự động gộp các tin nhắn người dùng liên tiếp, loại bỏ các tin nhắn trợ lý rỗng phát sinh do lỗi mạng trước đó nhằm giữ cấu trúc `user <-> assistant` luôn sạch sẽ.
+   - Bổ sung chỉ thị hệ thống yêu cầu trả lời chuyên sâu, đầy đủ mã nguồn và không ngắt ngang lời giải thích.
+3. **Kiểm thử Toàn diện:**
+   - Frontend `npm run build` thành công 100%.
+   - Backend `cargo test --workspace` (37/37 tests PASS) và `cargo clippy` 0 warning.
+
+**Hệ quả:** Giao diện ứng dụng sở hữu diện mạo chuyên nghiệp, rộng rãi và thoáng mắt tương đương các nền tảng AI hàng đầu; câu trả lời của Gemini Analyst đầy đủ, chi tiết và có định dạng Markdown đẹp mắt.
+
+**Trạng thái:** Đã áp dụng
+
+---
+
 ## [2026-10-03] Sửa lỗi Phản hồi Rỗng (Empty Response) khi Chat với Google Gemini
 
 **Bối cảnh:** Khi người dùng gửi tin nhắn trò chuyện với Google Gemini (`gemini-3.8-flash`), API trả về thành công mã HTTP 200, tuy nhiên giao diện chat không hiển thị bất kỳ nội dung nào và tin nhắn kết quả của tác tử bị rỗng (`""`).

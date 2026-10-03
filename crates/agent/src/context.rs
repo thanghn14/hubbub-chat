@@ -16,7 +16,7 @@ impl ContextBuilder {
         // 1. System Prompt with Current Time and Language Preference
         let now_utc = Utc::now().to_rfc3339();
         let system_content = format!(
-            "{}\n\n[Current Time (UTC): {}]\n[Language: When the user writes in Vietnamese, reply in Vietnamese. Maintain clear technical terms.]",
+            "{}\n\n[Current Time (UTC): {}]\n[Instruction: Provide comprehensive, well-structured, in-depth answers. Do not rush or artificially truncate your explanations. When explaining concepts or code, provide complete runnable examples with thorough step-by-step reasoning. Reply in Vietnamese when the user asks in Vietnamese.]",
             agent.system_prompt.trim(),
             now_utc
         );
@@ -39,6 +39,14 @@ impl ContextBuilder {
                         }
                     }
                     if !text.is_empty() {
+                        // Merge consecutive user messages to avoid confusing LLMs
+                        if let Some(last) = messages.last_mut().filter(|m| m.role == "user") {
+                            if last.content != text {
+                                last.content.push_str("\n\n");
+                                last.content.push_str(&text);
+                            }
+                            continue;
+                        }
                         messages.push(LlmMessage {
                             role: "user".to_string(),
                             content: text,
@@ -67,6 +75,11 @@ impl ContextBuilder {
                             }
                             _ => {}
                         }
+                    }
+
+                    // Skip empty assistant messages (e.g. from failed or aborted runs)
+                    if text.is_empty() && tool_calls.is_empty() {
+                        continue;
                     }
 
                     messages.push(LlmMessage {
@@ -106,6 +119,13 @@ impl ContextBuilder {
 
         // 3. New User Prompt (if provided)
         if let Some(prompt) = current_prompt.filter(|p| !p.is_empty()) {
+            if let Some(last) = messages.last_mut().filter(|m| m.role == "user") {
+                if last.content != prompt {
+                    last.content.push_str("\n\n");
+                    last.content.push_str(prompt);
+                }
+                return messages;
+            }
             messages.push(LlmMessage {
                 role: "user".to_string(),
                 content: prompt.to_string(),

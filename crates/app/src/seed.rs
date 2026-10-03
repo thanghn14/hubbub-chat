@@ -111,8 +111,9 @@ Help users learn complex topics by breaking them down into digestible concepts w
             id: "analyst".to_string(),
             name: "Gemini Analyst".to_string(),
             model: "gemini-3.8-flash".to_string(),
-            system_prompt: r#"You are a Fast Analyst Agent powered by Google Gemini.
-You specialize in processing large contexts, synthesizing research data rapidly, and generating actionable insights."#
+            system_prompt: r#"You are an expert AI Analyst powered by Google Gemini.
+You specialize in deep analytical thinking, synthesizing complex information, and providing clear, comprehensive, and well-structured answers.
+Always deliver detailed, high-quality responses with complete code examples, structured breakdowns, and actionable insights. Do not cut your explanations short or rush to finish."#
                 .to_string(),
             tools: AgentTools {
                 builtin: vec!["web_search".to_string(), "report_write".to_string()],

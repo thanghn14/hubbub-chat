@@ -4,7 +4,6 @@ import {
   Send,
   Square,
   Bot,
-  User,
   Wrench,
   CheckCircle2,
   XCircle,
@@ -12,6 +11,7 @@ import {
   Sparkles,
   AlertTriangle,
 } from 'lucide-react';
+import { MarkdownContent } from './MarkdownContent';
 
 interface ChatViewProps {
   conversationId: string;
@@ -45,12 +45,10 @@ export const ChatView = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-scroll to bottom on new messages or stream
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingText, activeTools]);
 
-  // Focus textarea when conversation changes
   useEffect(() => {
     textareaRef.current?.focus();
   }, [conversationTitle]);
@@ -93,7 +91,9 @@ export const ChatView = ({
             <div className="flex items-center gap-2 text-[11px] text-zinc-400">
               <span className="text-indigo-400 font-medium">{agent?.name || 'AI Assistant'}</span>
               <span>•</span>
-              <span className="font-mono text-[10px] text-zinc-400">{agent?.model || 'gpt-4o-mini'}</span>
+              <span className="font-mono text-[10px] text-zinc-400">
+                {agent?.model || 'gemini-3.8-flash'}
+              </span>
             </div>
           </div>
         </div>
@@ -101,7 +101,7 @@ export const ChatView = ({
         <div className="flex items-center gap-2">
           {agent && (
             <span className="text-[11px] bg-zinc-800/80 text-zinc-300 border border-zinc-700/60 px-2.5 py-1 rounded-full flex items-center gap-1.5">
-              <Sparkles className="w-3 h-3 text-amber-400" />
+              <Sparkles className="w-3 h-3 text-cyan-400" />
               <span>{agent.tools.builtin.length} tools</span>
             </span>
           )}
@@ -109,171 +109,208 @@ export const ChatView = ({
       </header>
 
       {/* Messages Scroll Area */}
-      <div className="flex-1 overflow-y-auto p-5 space-y-5">
-        {messages.length === 0 && !isStreaming ? (
-          <div className="h-full flex flex-col items-center justify-center text-center p-8 select-none">
-            <div className="w-12 h-12 rounded-xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-3 shadow-lg shadow-indigo-500/5">
-              <Sparkles className="w-6 h-6" />
-            </div>
-            <h3 className="text-base font-semibold text-zinc-200 mb-1">
-              Bắt đầu trò chuyện với {agent?.name || 'Hubbub'}
-            </h3>
-            <p className="text-xs text-zinc-400 max-w-sm mb-4">
-              {agent?.system_prompt.slice(0, 140)}...
-            </p>
-            <div className="flex flex-wrap justify-center gap-2 max-w-md">
-              <button
-                onClick={() => setInput('Hãy tóm tắt tin tức công nghệ mới nhất hôm nay')}
-                className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-lg text-xs text-zinc-300 transition-colors"
-              >
-                Tin tức công nghệ mới nhất
-              </button>
-              <button
-                onClick={() => setInput('Giải thích kiến trúc Clean Architecture trong Rust')}
-                className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-lg text-xs text-zinc-300 transition-colors"
-              >
-                Clean Architecture trong Rust
-              </button>
-            </div>
-          </div>
-        ) : (
-          <>
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex gap-3.5 max-w-3xl ${
-                  msg.role === 'user' ? 'ml-auto flex-row-reverse' : ''
-                }`}
-              >
-                {/* Avatar */}
-                <div
-                  className={`w-7 h-7 rounded-lg shrink-0 flex items-center justify-center text-xs font-semibold select-none ${
-                    msg.role === 'user'
-                      ? 'bg-zinc-700 text-zinc-200'
-                      : 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
-                  }`}
-                >
-                  {msg.role === 'user' ? <User className="w-3.5 h-3.5" /> : <Bot className="w-3.5 h-3.5" />}
-                </div>
-
-                {/* Content Bubble */}
-                <div
-                  className={`rounded-xl px-4 py-3 text-xs leading-relaxed ${
-                    msg.role === 'user'
-                      ? 'bg-indigo-600 text-white shadow-xs rounded-tr-xs'
-                      : 'bg-zinc-900 border border-zinc-800/80 text-zinc-200 shadow-xs rounded-tl-xs'
-                  }`}
-                >
-                  {/* Render parts */}
-                  {msg.parts.map((part, pIdx) => {
-                    if (part.type === 'Text') {
-                      const textContent =
-                        typeof part.content === 'string'
-                          ? part.content
-                          : typeof part.content === 'object' && part.content !== null
-                          ? JSON.stringify(part.content)
-                          : String(part.content ?? '');
-                      return (
-                        <div key={pIdx} className="whitespace-pre-wrap select-text font-normal">
-                          {textContent}
-                        </div>
-                      );
-                    }
-                    if (part.type === 'ToolCall') {
-                      const toolName =
-                        typeof part.content === 'object' && part.content !== null && 'name' in part.content
-                          ? String((part.content as Record<string, unknown>).name)
-                          : part.name || 'Công cụ';
-                      return (
-                        <div
-                          key={pIdx}
-                          className="my-1.5 p-2 bg-zinc-950/80 border border-zinc-800 rounded-md font-mono text-[11px] text-zinc-400 flex items-center gap-2"
-                        >
-                          <Wrench className="w-3 h-3 text-indigo-400 shrink-0" />
-                          <span>Gọi công cụ: <strong className="text-zinc-200">{toolName}</strong></span>
-                        </div>
-                      );
-                    }
-                    if (part.type === 'ToolResult') {
-                      const resStr =
-                        typeof part.content === 'object' && part.content !== null && 'result' in part.content
-                          ? JSON.stringify((part.content as Record<string, unknown>).result)
-                          : String(part.result ?? '');
-                      return (
-                        <div
-                          key={pIdx}
-                          className="my-1.5 p-2 bg-zinc-950/80 border border-zinc-800 rounded-md font-mono text-[11px] text-zinc-400 flex items-center gap-2"
-                        >
-                          <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
-                          <span className="truncate">Kết quả công cụ: {resStr}</span>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })}
-
-                  <div
-                    className={`text-[10px] mt-1.5 select-none ${
-                      msg.role === 'user' ? 'text-indigo-200/70 text-right' : 'text-zinc-400'
-                    }`}
-                  >
-                    {new Date(msg.created_at).toLocaleTimeString('vi-VN', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </div>
-                </div>
+      <div className="flex-1 overflow-y-auto p-5">
+        <div className="max-w-4xl mx-auto w-full">
+          {messages.length === 0 && !isStreaming ? (
+            <div className="h-[60vh] flex flex-col items-center justify-center text-center p-8 select-none">
+              <div className="w-12 h-12 rounded-xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-3 shadow-lg shadow-indigo-500/5">
+                <Sparkles className="w-6 h-6 text-cyan-400" />
               </div>
-            ))}
-
-            {/* Streaming Message Indicator */}
-            {isStreaming && (
-              <div className="flex gap-3.5 max-w-3xl">
-                <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm shadow-indigo-600/30 select-none">
-                  <Bot className="w-3.5 h-3.5" />
-                </div>
-
-                <div className="bg-zinc-900 border border-zinc-800/80 rounded-xl rounded-tl-xs px-4 py-3 text-xs leading-relaxed text-zinc-200 shadow-xs flex-1">
-                  {/* Tool execution logs */}
-                  {activeTools.length > 0 && (
-                    <div className="space-y-1.5 mb-2.5">
-                      {activeTools.map((tool) => (
-                        <div
-                          key={tool.id}
-                          className="p-2 bg-zinc-950/70 border border-zinc-800/80 rounded-lg text-[11px] font-mono flex items-center justify-between"
-                        >
-                          <div className="flex items-center gap-2">
-                            {tool.status === 'running' && (
-                              <Loader2 className="w-3 h-3 animate-spin text-indigo-400 shrink-0" />
-                            )}
-                            {tool.status === 'completed' && (
-                              <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
-                            )}
-                            {tool.status === 'failed' && (
-                              <XCircle className="w-3 h-3 text-red-400 shrink-0" />
-                            )}
-                            <span className="text-zinc-300 font-medium">{tool.name}</span>
-                          </div>
-                          <span className="text-zinc-400 truncate max-w-xs text-[10px]">
-                            {tool.summary || tool.preview}
-                          </span>
-                        </div>
-                      ))}
+              <h3 className="text-base font-semibold text-zinc-200 mb-1">
+                Bắt đầu trò chuyện với {agent?.name || 'Hubbub'}
+              </h3>
+              <p className="text-xs text-zinc-400 max-w-md mb-4 leading-relaxed">
+                {agent?.system_prompt.slice(0, 160)}...
+              </p>
+              <div className="flex flex-wrap justify-center gap-2 max-w-lg">
+                <button
+                  onClick={() =>
+                    setInput(
+                      'Giải thích dễ hiểu về đệ quy trong lập trình và cho ví dụ hoàn chỉnh bằng Rust'
+                    )
+                  }
+                  className="px-3.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-lg text-xs text-zinc-300 transition-colors"
+                >
+                  Đệ quy trong Rust với ví dụ cụ thể
+                </button>
+                <button
+                  onClick={() =>
+                    setInput('Phân tích ưu nhược điểm của kiến trúc Clean Architecture trong Rust')
+                  }
+                  className="px-3.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-lg text-xs text-zinc-300 transition-colors"
+                >
+                  Clean Architecture trong Rust
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {messages.map((msg) =>
+                msg.role === 'user' ? (
+                  /* User Message: Box message on the right */
+                  <div key={msg.id} className="flex justify-end my-4">
+                    <div className="bg-zinc-800/95 hover:bg-zinc-800 text-zinc-100 border border-zinc-700/50 rounded-2xl rounded-tr-xs px-4 py-2.5 max-w-2xl shadow-xs transition-colors">
+                      {msg.parts.map((part, pIdx) => {
+                        if (part.type === 'Text') {
+                          const textContent =
+                            typeof part.content === 'string'
+                              ? part.content
+                              : typeof part.content === 'object' && part.content !== null
+                              ? JSON.stringify(part.content)
+                              : String(part.content ?? '');
+                          return (
+                            <div
+                              key={pIdx}
+                              className="whitespace-pre-wrap select-text text-xs leading-relaxed font-normal"
+                            >
+                              {textContent}
+                            </div>
+                          );
+                        }
+                        return null;
+                      })}
+                      <div className="text-[10px] text-zinc-400/70 mt-1 text-right select-none font-mono">
+                        {new Date(msg.created_at).toLocaleTimeString('vi-VN', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </div>
                     </div>
-                  )}
+                  </div>
+                ) : (
+                  /* Agent Message: No box, rendered directly on background like Gemini/Antigravity */
+                  <div key={msg.id} className="w-full my-6 flex gap-3.5">
+                    <div className="w-7 h-7 rounded-lg shrink-0 flex items-center justify-center text-xs font-semibold select-none bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 mt-0.5">
+                      <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                    </div>
 
-                  {/* Streaming Text with blinking cursor */}
-                  <div className="whitespace-pre-wrap select-text">
-                    {streamingText}
-                    <span className="inline-block w-1.5 h-3.5 bg-indigo-400 ml-0.5 align-middle animate-pulse" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2 select-none">
+                        <span className="text-xs font-semibold text-zinc-200">
+                          {agent?.name || 'AI Assistant'}
+                        </span>
+                        <span className="text-[10px] text-zinc-400 font-mono">
+                          {new Date(msg.created_at).toLocaleTimeString('vi-VN', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                      </div>
+
+                      <div className="select-text text-xs leading-relaxed text-zinc-200">
+                        {msg.parts.map((part, pIdx) => {
+                          if (part.type === 'Text') {
+                            const textContent =
+                              typeof part.content === 'string'
+                                ? part.content
+                                : typeof part.content === 'object' && part.content !== null
+                                ? JSON.stringify(part.content)
+                                : String(part.content ?? '');
+                            return <MarkdownContent key={pIdx} content={textContent} />;
+                          }
+                          if (part.type === 'ToolCall') {
+                            const toolName =
+                              typeof part.content === 'object' &&
+                              part.content !== null &&
+                              'name' in part.content
+                                ? String((part.content as Record<string, unknown>).name)
+                                : part.name || 'Công cụ';
+                            return (
+                              <div
+                                key={pIdx}
+                                className="my-2 p-2 bg-zinc-900/60 border border-zinc-800/80 rounded-lg font-mono text-[11px] text-zinc-400 flex items-center gap-2 max-w-md"
+                              >
+                                <Wrench className="w-3 h-3 text-indigo-400 shrink-0" />
+                                <span>
+                                  Gọi công cụ: <strong className="text-zinc-200">{toolName}</strong>
+                                </span>
+                              </div>
+                            );
+                          }
+                          if (part.type === 'ToolResult') {
+                            const resStr =
+                              typeof part.content === 'object' &&
+                              part.content !== null &&
+                              'result' in part.content
+                                ? JSON.stringify((part.content as Record<string, unknown>).result)
+                                : String(part.result ?? '');
+                            return (
+                              <div
+                                key={pIdx}
+                                className="my-2 p-2 bg-zinc-900/60 border border-zinc-800/80 rounded-lg font-mono text-[11px] text-zinc-400 flex items-center gap-2 max-w-md"
+                              >
+                                <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                                <span className="truncate">Kết quả: {resStr}</span>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )
+              )}
+
+              {/* Streaming Assistant Message: Rendered directly on background */}
+              {isStreaming && (
+                <div className="w-full my-6 flex gap-3.5">
+                  <div className="w-7 h-7 rounded-lg shrink-0 flex items-center justify-center text-xs font-semibold select-none bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 mt-0.5">
+                    <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2 select-none">
+                      <span className="text-xs font-semibold text-zinc-200">
+                        {agent?.name || 'AI Assistant'}
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 text-[11px] text-indigo-400">
+                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+                        Đang sinh phản hồi...
+                      </span>
+                    </div>
+
+                    {/* Active Tools display */}
+                    {activeTools.length > 0 && (
+                      <div className="space-y-1.5 mb-2.5 max-w-md">
+                        {activeTools.map((tool) => (
+                          <div
+                            key={tool.id}
+                            className="p-2 bg-zinc-900/60 border border-zinc-800/80 rounded-lg text-[11px] font-mono flex items-center justify-between"
+                          >
+                            <div className="flex items-center gap-2">
+                              {tool.status === 'running' && (
+                                <Loader2 className="w-3 h-3 animate-spin text-indigo-400 shrink-0" />
+                              )}
+                              {tool.status === 'completed' && (
+                                <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                              )}
+                              {tool.status === 'failed' && (
+                                <XCircle className="w-3 h-3 text-red-400 shrink-0" />
+                              )}
+                              <span className="text-zinc-300 font-medium">{tool.name}</span>
+                            </div>
+                            <span className="text-zinc-400 truncate max-w-xs text-[10px]">
+                              {tool.summary || tool.preview}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Streaming Markdown text with blinking cursor */}
+                    <div className="select-text text-xs leading-relaxed text-zinc-200">
+                      <MarkdownContent content={streamingText} />
+                      <span className="inline-block w-1.5 h-3.5 bg-cyan-400 ml-0.5 align-middle animate-pulse" />
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </>
-        )}
+              )}
+            </>
+          )}
 
-        <div ref={messagesEndRef} />
+          <div ref={messagesEndRef} />
+        </div>
       </div>
 
       {/* Error Banner */}
