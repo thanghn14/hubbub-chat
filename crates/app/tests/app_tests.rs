@@ -156,3 +156,34 @@ async fn test_app_service_build_llm_provider() {
         Err(other) => panic!("Expected AppError::Provider, got {other:?}"),
     }
 }
+
+#[tokio::test]
+async fn test_app_service_workspace_and_reports() {
+    let tmp = tempfile::tempdir().unwrap();
+    let config = AppConfig {
+        workspace_dir: tmp.path().to_path_buf(),
+        ..Default::default()
+    };
+    let service = AppService::init(config).await.unwrap();
+
+    // 1. Initially no reports
+    let reports = service.list_reports().await.unwrap();
+    assert!(reports.is_empty());
+
+    // 2. Write a report via workspace
+    service
+        .workspace()
+        .write_file("reports/test-report.md", "# Báo cáo Test\n\nNội dung.")
+        .await
+        .unwrap();
+
+    // 3. List reports
+    let reports = service.list_reports().await.unwrap();
+    assert_eq!(reports.len(), 1);
+    assert_eq!(reports[0], "reports/test-report.md");
+
+    // 4. Read report
+    let content = service.read_report("test-report.md").await.unwrap();
+    assert!(content.contains("# Báo cáo Test"));
+}
+

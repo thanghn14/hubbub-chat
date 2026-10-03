@@ -67,4 +67,37 @@ impl PathGuard {
 
         Ok(resolved)
     }
+
+    /// Checks whether a relative path is a protected system directory or file
+    /// that tools are strictly forbidden from modifying (e.g. agents/, config.toml, .versions/).
+    pub fn is_protected_path(relative_path: &str) -> bool {
+        let normalized = relative_path.replace('\\', "/");
+        let trimmed = normalized.trim_matches('/');
+
+        trimmed == "config.toml"
+            || trimmed == ".env"
+            || trimmed == ".git"
+            || trimmed.starts_with(".git/")
+            || trimmed == "agents"
+            || trimmed.starts_with("agents/")
+            || trimmed == ".versions"
+            || trimmed.starts_with(".versions/")
+    }
+
+    /// Resolve and sanitize a relative path strictly within workspace_root,
+    /// and verify that it is NOT a protected system path.
+    pub fn check_write_path(
+        workspace_root: &Path,
+        relative_path: &str,
+    ) -> Result<PathBuf, PolicyError> {
+        let resolved = Self::resolve_within_workspace(workspace_root, relative_path)?;
+        if Self::is_protected_path(relative_path) {
+            return Err(PolicyError::PermissionDenied {
+                agent_id: "system".to_string(),
+                operation: "fs_write".to_string(),
+                reason: format!("Writing to protected path '{relative_path}' is strictly forbidden"),
+            });
+        }
+        Ok(resolved)
+    }
 }

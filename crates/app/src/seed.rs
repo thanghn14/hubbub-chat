@@ -130,7 +130,7 @@ Respond in the language used by the user."#
                 mcp: vec![],
             },
             permissions: AgentPermissions {
-                fs_read: vec![],
+                fs_read: vec!["reports/**".to_string(), "notes/**".to_string()],
                 fs_write: vec!["reports/**".to_string()],
                 network: NetworkPolicy::None,
             },

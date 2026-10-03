@@ -222,3 +222,22 @@ proptest::proptest! {
         proptest::prop_assert!(UrlGuard::is_private_or_restricted_ip(&ip));
     }
 }
+
+#[test]
+fn test_path_guard_protects_system_files() {
+    let root = Path::new("/workspace");
+
+    // Allowed paths
+    assert!(PathGuard::check_write_path(root, "reports/summary.md").is_ok());
+    assert!(PathGuard::check_write_path(root, "notes/todo.txt").is_ok());
+    assert!(PathGuard::check_write_path(root, "data/output.json").is_ok());
+
+    // Protected paths must fail
+    assert!(PathGuard::check_write_path(root, "config.toml").is_err());
+    assert!(PathGuard::check_write_path(root, "agents/analyst/agent.toml").is_err());
+    assert!(PathGuard::check_write_path(root, "agents/prompt.md").is_err());
+    assert!(PathGuard::check_write_path(root, ".versions/old.md").is_err());
+    assert!(PathGuard::check_write_path(root, ".git/config").is_err());
+    assert!(PathGuard::check_write_path(root, ".env").is_err());
+}
+

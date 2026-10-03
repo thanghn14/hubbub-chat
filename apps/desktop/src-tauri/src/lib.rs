@@ -58,6 +58,10 @@ pub fn run() {
             commands::delete_provider_key,
             commands::send_message,
             commands::cancel_run,
+            commands::list_reports,
+            commands::read_report,
+            commands::list_documents,
+            commands::search_documents,
         ])
         .run(tauri::generate_context!())
         .unwrap_or_else(|e| {

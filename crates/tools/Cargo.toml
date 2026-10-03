@@ -19,7 +19,9 @@ tracing = { workspace = true }
 uuid = { workspace = true }
 scraper = { workspace = true }
 url = { workspace = true }
+chrono = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
+hubbub-workspace = { path = "../workspace" }
 

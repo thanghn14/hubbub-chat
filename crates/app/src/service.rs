@@ -8,16 +8,18 @@ use uuid::Uuid;
 use hubbub_agent::AgentRuntime;
 use hubbub_domain::entities::agent::Agent;
 use hubbub_domain::entities::conversation::{Conversation, Message};
+use hubbub_domain::entities::document::Document;
 use hubbub_domain::entities::run::Run;
 use hubbub_domain::ports::event_sink::EventSink;
 use hubbub_domain::ports::llm::LlmProvider;
 use hubbub_domain::ports::secret_store::SecretStore;
 use hubbub_domain::ports::store::Store;
 use hubbub_domain::ports::tool_host::ToolHost;
-use hubbub_llm::{AnthropicAdapter, OpenAiCompatAdapter, ProviderConfig};
+use hubbub_domain::ports::workspace_service::WorkspaceService;
 use hubbub_store::SqliteStore;
 use hubbub_tools::BuiltinToolHost;
 use hubbub_vault::KeyringVault;
+use hubbub_workspace::LocalWorkspaceService;
 
 use crate::config::AppConfig;
 use crate::errors::AppError;
@@ -28,6 +30,7 @@ pub struct AppService {
     store: Arc<dyn Store>,
     vault: Arc<dyn SecretStore>,
     tool_host: Arc<dyn ToolHost>,
+    workspace: Arc<dyn WorkspaceService>,
     agents: Arc<RwLock<HashMap<String, Agent>>>,
     active_cancellations: Arc<Mutex<HashMap<Uuid, CancellationToken>>>,
 }
@@ -39,6 +42,17 @@ impl AppService {
         vault: Arc<dyn SecretStore>,
         tool_host: Arc<dyn ToolHost>,
     ) -> Self {
+        let workspace = Arc::new(LocalWorkspaceService::new(&config.workspace_dir));
+        Self::with_workspace(config, store, vault, tool_host, workspace)
+    }
+
+    pub fn with_workspace(
+        config: AppConfig,
+        store: Arc<dyn Store>,
+        vault: Arc<dyn SecretStore>,
+        tool_host: Arc<dyn ToolHost>,
+        workspace: Arc<dyn WorkspaceService>,
+    ) -> Self {
         let mut map = HashMap::new();
         for agent in default_agents() {
             map.insert(agent.id.clone(), agent);
@@ -49,21 +63,33 @@ impl AppService {
             store,
             vault,
             tool_host,
+            workspace,
             agents: Arc::new(RwLock::new(map)),
             active_cancellations: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 
-    /// Initialize default AppService with SQLite store and Keyring vault.
+    /// Initialize default AppService with SQLite store, Keyring vault, and Workspace service.
     pub async fn init(config: AppConfig) -> Result<Self, AppError> {
         let data_dir = config.workspace_dir.join("data");
+        let reports_dir = config.workspace_dir.join("reports");
+        let notes_dir = config.workspace_dir.join("notes");
+        let sources_dir = config.workspace_dir.join("sources");
+        let versions_dir = config.workspace_dir.join(".versions");
+
         std::fs::create_dir_all(&data_dir)?;
+        std::fs::create_dir_all(&reports_dir)?;
+        std::fs::create_dir_all(&notes_dir)?;
+        std::fs::create_dir_all(&sources_dir)?;
+        std::fs::create_dir_all(&versions_dir)?;
 
         let db_path = data_dir.join("hubbub.db");
         let db_str = db_path.to_string_lossy().to_string();
         let store = Arc::new(SqliteStore::open(&db_str).await?);
         let vault = Arc::new(KeyringVault::new("hubbub"));
-        let tool_host = Arc::new(BuiltinToolHost::new());
+
+        let workspace = Arc::new(LocalWorkspaceService::new(&config.workspace_dir));
+        let tool_host = Arc::new(BuiltinToolHost::with_workspace(workspace.clone(), Some(store.clone())));
 
         let agents_path = data_dir.join("agents.json");
         let mut map = HashMap::new();
@@ -90,6 +116,7 @@ impl AppService {
             store,
             vault,
             tool_host,
+            workspace,
             agents: Arc::new(RwLock::new(map)),
             active_cancellations: Arc::new(Mutex::new(HashMap::new())),
         })
@@ -227,30 +254,7 @@ impl AppService {
         provider_name: &str,
         api_key: Option<String>,
     ) -> Result<Arc<dyn LlmProvider>, AppError> {
-        let setting =
-            self.config
-                .providers
-                .get(provider_name)
-                .ok_or_else(|| AppError::Provider {
-                    provider: provider_name.to_string(),
-                    message: "Cấu hình provider không tồn tại".to_string(),
-                })?;
-
-        let config = ProviderConfig {
-            api_key: api_key.unwrap_or_default(),
-            base_url: setting.base_url.clone(),
-            timeout_s: Some(setting.timeout_s),
-            max_retries: Some(setting.max_retries),
-        };
-
-        match setting.kind.as_str() {
-            "openai_compat" => Ok(Arc::new(OpenAiCompatAdapter::new(config))),
-            "anthropic" => Ok(Arc::new(AnthropicAdapter::new(config))),
-            other => Err(AppError::Provider {
-                provider: provider_name.to_string(),
-                message: format!("Loại provider không được hỗ trợ: {other}"),
-            }),
-        }
+        crate::provider_factory::ProviderFactory::build(&self.config, provider_name, api_key)
     }
 
     // --- Agent Run Execution ---
@@ -343,4 +347,37 @@ impl AppService {
             Ok(false)
         }
     }
+
+    // --- Workspace & Reports ---
+
+    pub fn workspace(&self) -> &Arc<dyn WorkspaceService> {
+        &self.workspace
+    }
+
+    pub async fn list_reports(&self) -> Result<Vec<String>, AppError> {
+        let files = self.workspace.list_files("reports").await?;
+        let reports = files.into_iter().filter(|f| f.ends_with(".md")).collect();
+        Ok(reports)
+    }
+
+    pub async fn read_report(&self, filename: &str) -> Result<String, AppError> {
+        let clean = if filename.starts_with("reports/") || filename.starts_with("reports\\") {
+            filename.to_string()
+        } else {
+            format!("reports/{filename}")
+        };
+        let content = self.workspace.read_file(&clean).await?;
+        Ok(content)
+    }
+
+    pub async fn list_documents(&self) -> Result<Vec<Document>, AppError> {
+        let docs = self.store.list_documents().await?;
+        Ok(docs)
+    }
+
+    pub async fn search_documents(&self, query: &str) -> Result<Vec<Document>, AppError> {
+        let docs = self.store.search_documents(query).await?;
+        Ok(docs)
+    }
 }
+

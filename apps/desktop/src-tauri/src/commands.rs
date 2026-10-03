@@ -5,6 +5,7 @@ use uuid::Uuid;
 use hubbub_app::AppService;
 use hubbub_domain::entities::agent::Agent;
 use hubbub_domain::entities::conversation::{Conversation, Message};
+use hubbub_domain::entities::document::Document;
 use hubbub_domain::entities::run::Run;
 
 use crate::events::TauriEventSink;
@@ -172,3 +173,38 @@ pub async fn send_message(
 pub async fn cancel_run(run_id: Uuid, service: State<'_, Arc<AppService>>) -> Result<bool, String> {
     service.cancel_run(run_id).await.map_err(|e| e.to_string())
 }
+
+/// Tauri IPC command: list all reports in the workspace.
+#[tauri::command]
+pub async fn list_reports(
+    service: State<'_, Arc<AppService>>,
+) -> Result<Vec<String>, String> {
+    service.list_reports().await.map_err(|e| e.to_string())
+}
+
+/// Tauri IPC command: read a specific report from reports/.
+#[tauri::command]
+pub async fn read_report(
+    filename: String,
+    service: State<'_, Arc<AppService>>,
+) -> Result<String, String> {
+    service.read_report(&filename).await.map_err(|e| e.to_string())
+}
+
+/// Tauri IPC command: list indexed workspace documents.
+#[tauri::command]
+pub async fn list_documents(
+    service: State<'_, Arc<AppService>>,
+) -> Result<Vec<Document>, String> {
+    service.list_documents().await.map_err(|e| e.to_string())
+}
+
+/// Tauri IPC command: search indexed documents with FTS5.
+#[tauri::command]
+pub async fn search_documents(
+    query: String,
+    service: State<'_, Arc<AppService>>,
+) -> Result<Vec<Document>, String> {
+    service.search_documents(&query).await.map_err(|e| e.to_string())
+}
+

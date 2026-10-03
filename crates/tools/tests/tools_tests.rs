@@ -150,3 +150,78 @@ fn test_builtin_tool_host_available_tools_schema() {
     assert!(names.contains(&"report_read"));
     assert!(names.contains(&"report_list"));
 }
+
+#[tokio::test]
+async fn test_builtin_tool_host_fs_and_report_tools() {
+    use std::sync::Arc;
+    use tempfile::tempdir;
+    use hubbub_workspace::LocalWorkspaceService;
+
+    let dir = tempdir().unwrap();
+    let ws = Arc::new(LocalWorkspaceService::new(dir.path()));
+    let host = BuiltinToolHost::with_workspace(ws, None);
+
+    let ctx = ToolContext {
+        agent_id: "researcher".to_string(),
+        run_id: Uuid::now_v7(),
+        workspace_root: dir.path().to_string_lossy().to_string(),
+    };
+
+    // 1. report_write
+    let write_res = host
+        .execute(
+            "report_write",
+            serde_json::json!({
+                "title": "Báo cáo AI Quốc tế 2026",
+                "content": "Nội dung báo cáo chi tiết về AI.",
+                "filename": "ai-report.md"
+            }),
+            ctx.clone(),
+        )
+        .await
+        .unwrap();
+    assert!(write_res.success);
+    assert!(write_res.content.contains("reports/ai-report.md"));
+
+    // 2. report_read
+    let read_res = host
+        .execute(
+            "report_read",
+            serde_json::json!({ "filename": "ai-report.md" }),
+            ctx.clone(),
+        )
+        .await
+        .unwrap();
+    assert!(read_res.success);
+    assert!(read_res.content.contains("Báo cáo AI Quốc tế 2026"));
+    assert!(read_res.content.contains("Nội dung báo cáo chi tiết về AI."));
+
+    // 3. report_list
+    let list_res = host
+        .execute("report_list", serde_json::json!({}), ctx.clone())
+        .await
+        .unwrap();
+    assert!(list_res.success);
+    assert!(list_res.content.contains("ai-report.md"));
+
+    // 4. fs_read
+    let fs_read_res = host
+        .execute(
+            "fs_read",
+            serde_json::json!({ "path": "reports/ai-report.md" }),
+            ctx.clone(),
+        )
+        .await
+        .unwrap();
+    assert!(fs_read_res.success);
+    assert!(fs_read_res.content.contains("Báo cáo AI Quốc tế 2026"));
+
+    // 5. fs_list
+    let fs_list_res = host
+        .execute("fs_list", serde_json::json!({ "path": "reports" }), ctx.clone())
+        .await
+        .unwrap();
+    assert!(fs_list_res.success);
+    assert!(fs_list_res.content.contains("reports/ai-report.md"));
+}
+

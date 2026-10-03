@@ -5,6 +5,48 @@ Sắp xếp theo thứ tự thời gian (mới nhất ở trên).
 
 > **QUY TẮC:** PR/commit có thay đổi quan trọng mà KHÔNG cập nhật file này sẽ bị reject.
 
+## [2026-10-03] Triển khai Sprint 2.3: Local Filesystem Tools (`hubbub-tools`) & Workspace Service (`hubbub-workspace`)
+
+**Bối cảnh:**
+Theo kế hoạch phát triển Phase 2 (`MASTER_PLAN.md`), Agent cần có khả năng đọc/quản lý tệp cục bộ có kiểm soát, tạo báo cáo nghiên cứu Markdown có cấu trúc, tự động đánh chỉ mục vào cơ sở dữ liệu SQLite FTS5 và quản lý phiên bản lịch sử tài liệu (.versions/).
+Đồng thời, hệ thống phải tuân thủ nghiêm ngặt mô hình bảo mật Zero-Trust:
+1. Agent có quyền đọc tệp cục bộ (`librarian`, `developer`) thì bắt buộc `network = "none"` để chống rò rỉ dữ liệu (Data Exfiltration).
+2. Agent có quyền truy cập Internet (`analyst`, `researcher`) thì `fs_read` bị khóa hoàn toàn, chỉ được ghi vào `reports/**`.
+3. Mọi thao tác ghi tệp phải là Atomic Write (ghi temp file -> fsync -> rename) và tự động sao lưu phiên bản cũ vào `.versions/` (giữ tối đa 20 phiên bản).
+4. Các thư mục hệ thống nhạy cảm (`agents/`, `config.toml`, `.versions/`, `.git/`, `.env`) là bất khả xâm phạm đối với toàn bộ công cụ.
+
+**Quyết định & Giải pháp Triển khai:**
+1. **Bảo vệ Hệ thống Cốt lõi (`crates/policy` - `PathGuard`):**
+   - Bổ sung `PathGuard::is_protected_path`: Chặn đứng mọi hành vi ghi đè hoặc can thiệp vào `config.toml`, `.env`, `.git/`, `agents/`, và `.versions/`.
+   - Bổ sung `PathGuard::check_write_path`: Kiểm tra đường dẫn hợp lệ trong Workspace đồng thời xác thực không thuộc danh mục protected paths.
+2. **Dịch vụ Workspace Cục bộ (`crates/workspace` - `LocalWorkspaceService`):**
+   - Triển khai trọn vẹn domain port `WorkspaceService`:
+     - `write_file`: Ghi tệp nguyên tử (Atomic Write) với `Uuid` temp file và `sync_all()`, tự động sao lưu phiên bản vào `.versions/{filename}.{timestamp}.bak` (tối đa 20 bản).
+     - `read_file`: Kiểm tra `PathGuard`, từ chối tệp quá dung lượng cho phép (> 5MB), xác thực UTF-8 hợp lệ.
+     - `list_files`: Liệt kê tệp tin an toàn theo thư mục, tự động lọc bỏ các thư mục ẩn/hệ thống.
+     - `reindex_file`: Tính mã băm SHA-256, tự động trích xuất tiêu đề Markdown (`# Tiêu đề`), khởi tạo thực thể `Document` chuẩn.
+3. **Bộ Công cụ Tệp & Báo cáo Tác tử (`crates/tools`):**
+   - `FsReadTool` (`fs_read`): Đọc tệp tin với cơ chế rút gọn ngữ cảnh thông minh (tối đa 20.000 ký tự) cho LLM.
+   - `FsListTool` (`fs_list`): Liệt kê tệp trong Workspace dạng Markdown có cấu trúc.
+   - `ReportWriteTool` (`report_write`): Lưu báo cáo vào `reports/`, chuẩn hóa tiêu đề và tên tệp `YYYY-MM-DD-slug.md`, ghi tệp nguyên tử và tự động đồng bộ siêu dữ liệu vào bảng `documents` + `documents_fts` trong SQLite.
+   - `ReportReadTool` (`report_read`): Đọc báo cáo từ `reports/`.
+   - `ReportListTool` (`report_list`): Liệt kê tất cả báo cáo đã lưu kèm dung lượng.
+   - `BuiltinToolHost`: Tích hợp các công cụ mới thông qua constructor `with_workspace(workspace, store)`.
+4. **Tích hợp Tầng Ứng dụng & Shell (`crates/app` & `apps/desktop/src-tauri`):**
+   - Tự động khởi tạo cấu trúc thư mục Workspace: `reports/`, `notes/`, `sources/`, `.versions/`, `data/`.
+   - Tách `ProviderFactory` khỏi `service.rs` để duy trì kích thước file strictly `< 400 dòng`.
+   - Cung cấp các lệnh Tauri IPC: `list_reports`, `read_report`, `list_documents`, `search_documents`.
+   - Cập nhật quyền hạn cho tác tử `writer`: cho phép đọc/ghi `reports/**` với `network: none`.
+5. **Kiểm thử Toàn diện (Test-First & Edge Cases):**
+   - Bổ sung 7 test cases trong `workspace_tests.rs` (tiếng Việt có dấu, emoji, path traversal, file size limit, auto-versioning, atomic write).
+   - Bổ sung test cases trong `tools_tests.rs` và `app_tests.rs`.
+   - Bổ sung integration test `report_tool_tests.rs` trong `hubbub-agent`: xác minh FakeLlm gọi `report_write` tạo file thực tế trên đĩa và index vào SQLite store.
+   - Toàn bộ 81 test cases trên workspace PASS 100%, Clippy 0 warnings, Frontend build thành công.
+
+**Trạng thái:** Đã áp dụng
+
+---
+
 ## [2026-10-03] Khắc Phục Triệt Để Lỗi Phản Hồi Bị Cắt Giữa Chừng (Response Truncation & Auto-Continuation)
 
 **Bối cảnh:**

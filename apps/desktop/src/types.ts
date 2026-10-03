@@ -72,3 +72,17 @@ export interface ToolLog {
   status: 'running' | 'completed' | 'failed';
   summary?: string;
 }
+
+export interface WorkspaceDocument {
+  id: string;
+  path: string;
+  title: string;
+  tags: string[];
+  agent_id?: string | null;
+  run_id?: string | null;
+  content_hash: string;
+  size_bytes: number;
+  created_at: string;
+  updated_at: string;
+}
+

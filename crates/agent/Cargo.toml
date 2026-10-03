@@ -22,4 +22,8 @@ tracing = { workspace = true }
 [dev-dependencies]
 hubbub-testkit = { path = "../testkit" }
 hubbub-store = { path = "../store" }
+hubbub-tools = { path = "../tools" }
+hubbub-workspace = { path = "../workspace" }
+tempfile = { workspace = true }
+
 
