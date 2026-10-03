@@ -17,7 +17,12 @@ Always deliver detailed, high-quality responses with complete code examples, str
 Respond in the language used by the user."#
                 .to_string(),
             tools: AgentTools {
-                builtin: vec!["web_search".to_string(), "report_write".to_string(), "report_read".to_string()],
+                builtin: vec![
+                    "web_search".to_string(),
+                    "web_fetch".to_string(),
+                    "report_write".to_string(),
+                    "report_read".to_string(),
+                ],
                 mcp: vec![],
             },
             permissions: AgentPermissions {

@@ -4,7 +4,38 @@ Mọi quyết định quan trọng và thay đổi lớn trong quá trình phát
 Sắp xếp theo thứ tự thời gian (mới nhất ở trên).
 
 > **QUY TẮC:** PR/commit có thay đổi quan trọng mà KHÔNG cập nhật file này sẽ bị reject.
-> Áp dụng cho cả Dev và Agent (AI).
+## [2026-10-03] Triển khai Phase 2: Security Policy Engine (`hubbub-policy`) & Live Web Tools (`hubbub-tools`)
+
+**Bối cảnh:**
+Để hỗ trợ Agent tìm kiếm thông tin chính xác theo thời gian thực trên Internet và đảm bảo an toàn tuyệt đối cho người dùng cục bộ, Hubbub cần triển khai Phase 2 theo MASTER_PLAN.md:
+1. **Sprint 2.1 - Security Policy Engine (`hubbub-policy`):** Hệ thống chính sách bảo mật Zero-Trust độc lập hoàn toàn với I/O (theo Clean Architecture), bảo vệ chống SSRF, Path Traversal, truy cập tệp tùy ý và vi phạm quyền tác tử (agent capabilities).
+2. **Sprint 2.2 - Live Web Tools (`hubbub-tools`):** Công cụ tìm kiếm web thời gian thực `web_search` (zero-config, không cần API key) và công cụ đọc nội dung trang web `web_fetch` (chuyển đổi HTML sang Markdown sạch, có cơ chế chống SSRF).
+
+**Quyết định & Chi tiết Triển khai:**
+1. **Sprint 2.1 - `hubbub-policy`:**
+   - **`UrlGuard`:** Chặn toàn bộ tấn công SSRF (Server-Side Request Forgery). Kiểm tra scheme (chỉ chấp nhận `http` / `https`), phân giải DNS hoặc IP literal và chặn triệt để: IPv4 loopback (`127.0.0.0/8`, `0.0.0.0/8`), IPv4 private ranges (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`), Cloud Metadata (`169.254.169.254`), Carrier-grade NAT (`100.64.0.0/10`), Link-local (`fe80::/10`, `169.254.0.0/16`), IPv6 Loopback (`::1`), IPv6 ULA (`fc00::/7`), và các hostname nội bộ (`localhost`, `*.local`, `*.internal`, `metadata.google.internal`).
+   - **`PathGuard`:** Chặn toàn bộ tấn công Path Traversal. Chuẩn hóa đường dẫn, chặn `..`, đường dẫn tuyệt đối (`/`, `C:\`), null bytes, Windows Alternate Data Streams (`:`), và UNC paths (`\\`). Hỗ trợ an toàn đường dẫn `.` nội bộ thư mục gốc workspace.
+   - **`PermissionChecker`:** Kiểm soát quyền hạn tác tử theo `AgentPermissions` và `NetworkPolicy` (`Open`, `SearchOnly`, `Allowlist`, `None`). Kiểm tra khớp pattern glob cho `fs_read` và `fs_write`.
+   - **Kiểm thử Sprint 2.1:** 14 bài kiểm thử gồm unit tests và 5 bộ property-based testing (`proptest`) bao phủ toàn diện dải IP và đường dẫn độc hại.
+
+2. **Sprint 2.2 - `hubbub-tools`:**
+   - **`WebSearchTool` (`web_search`):** Sử dụng DuckDuckGo Lite (`https://lite.duckduckgo.com/lite/`), gửi truy vấn POST với `q=...&kl=wt-wt`. Hoạt động 100% zero-config không cần API key, phân tích cú pháp HTML trả về tiêu đề, tóm tắt và URL nguồn sạch sẽ cho Agent.
+   - **`WebFetchTool` (`web_fetch`):** Tải nội dung trang web công khai có bảo vệ SSRF qua `UrlGuard`. Hạn chế redirect tối đa 5 bước với kiểm tra URL mỗi bước redirect, giới hạn dung lượng tải về (tối đa 2MB), trích xuất vùng nội dung chính (`<main>`, `<article>`, `<body>`), loại bỏ rác/scripts, và chuyển đổi sang định dạng Markdown sạch (tối đa 25,000 ký tự thân thiện với context window).
+   - **`BuiltinToolHost`:** Điều phối và xuất schema công cụ chuẩn OpenAPI cho các tác tử.
+
+3. **Tích hợp Tầng Tác tử (`hubbub-agent`):**
+   - Trong `ToolRunner::execute_tool_call`, tích hợp hàm `check_policy` tự động kiểm tra `PermissionChecker`, `PathGuard`, và `UrlGuard` TRƯỚC KHI thực thi bất kỳ công cụ nào.
+   - Nếu tác tử vi phạm chính sách (ví dụ tác tử offline cố gọi `web_search`, hoặc tác tử đọc đường dẫn ra ngoài workspace `../../windows`), hành động bị từ chối an toàn ngay tại tầng Policy mà không bao giờ kích hoạt I/O thực tế.
+   - Bổ sung `crates/agent/tests/policy_enforcement_tests.rs` với 3 bài kiểm thử tích hợp (mock LLM + runtime) chứng minh sự can thiệp của Policy Engine.
+
+**Kết quả & Tuân thủ:**
+- Toàn bộ 50+ bài kiểm thử trong workspace vượt qua 100%.
+- `cargo clippy --workspace --all-targets -- -D warnings` đạt 0 cảnh báo.
+- Quy tắc mã nguồn: 0 `unwrap()`/`expect()` trong code nghiệp vụ, mọi file < 400 dòng, mọi hàm < 60 dòng.
+
+**Trạng thái:** Đã áp dụng
+
+---
 
 ## [2026-10-03] Xử lý Gemini Thought Signatures & Bảo toàn Ngữ cảnh Tool Calling (Multi-turn)
 
