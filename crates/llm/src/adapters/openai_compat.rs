@@ -69,7 +69,9 @@ impl LlmProvider for OpenAiCompatAdapter {
         });
 
         if let Some(max_tokens) = config.max_tokens {
-            payload["max_tokens"] = serde_json::json!(max_tokens);
+            let cap = if is_gemini { 8192 } else { 16384 };
+            let clamped = max_tokens.min(cap);
+            payload["max_tokens"] = serde_json::json!(clamped);
         }
         if let Some(temp) = config.temperature {
             payload["temperature"] = serde_json::json!(temp);
@@ -230,17 +232,17 @@ impl LlmStream for OpenAiStream {
 
                     // Check choices[0]
                     if let Some(choice) = parsed.get("choices").and_then(|c| c.get(0)) {
-                        if let Some(delta) = choice.get("delta") {
-                            // 1. Text Delta
-                            if let Some(content) = delta
-                                .get("content")
-                                .and_then(Value::as_str)
-                                .filter(|c| !c.is_empty())
-                            {
-                                return Some(Ok(LlmChunk::Delta(content.to_string())));
+                        if let Some(reason) = choice.get("finish_reason").and_then(Value::as_str) {
+                            if reason == "tool_calls" {
+                                self.flush_tool_calls();
+                            } else {
+                                self.pending_chunks
+                                    .push_back(LlmChunk::FinishReason(reason.to_string()));
                             }
+                        }
 
-                            // 2. Tool calls delta
+                        if let Some(delta) = choice.get("delta") {
+                            // 1. Tool calls delta
                             if let Some(tcs) = delta.get("tool_calls").and_then(Value::as_array) {
                                 for tc in tcs {
                                     let idx = tc.get("index").and_then(Value::as_u64).unwrap_or(0)
@@ -261,15 +263,19 @@ impl LlmStream for OpenAiStream {
                                     }
                                 }
                             }
+
+                            // 2. Text Delta
+                            if let Some(content) = delta
+                                .get("content")
+                                .and_then(Value::as_str)
+                                .filter(|c| !c.is_empty())
+                            {
+                                return Some(Ok(LlmChunk::Delta(content.to_string())));
+                            }
                         }
 
-                        // Check finish reason
-                        if choice.get("finish_reason").and_then(Value::as_str) == Some("tool_calls")
-                        {
-                            self.flush_tool_calls();
-                            if let Some(chunk) = self.pending_chunks.pop_front() {
-                                return Some(Ok(chunk));
-                            }
+                        if let Some(chunk) = self.pending_chunks.pop_front() {
+                            return Some(Ok(chunk));
                         }
                     }
                 }

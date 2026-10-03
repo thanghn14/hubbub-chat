@@ -56,73 +56,19 @@ impl<'a> LlmRunner<'a> {
         };
         self.store.create_step(&step).await?;
 
-        let llm_config = LlmConfig {
-            model: params.agent.model.clone(),
-            max_tokens: Some(params.agent.budget.max_tokens),
-            temperature: Some(0.7),
-        };
-
-        let stream_result = tokio::select! {
-            _ = params.cancellation_token.cancelled() => {
-                return Err(AgentError::Cancelled);
-            }
-            res = self.llm_provider.chat_stream(
-                params.working_messages.to_vec(),
-                params.active_tools.to_vec(),
-                llm_config,
-            ) => res
-        };
-
-        let mut stream = match stream_result {
-            Ok(s) => s,
-            Err(e) => {
-                step.status = StepStatus::Failed;
-                step.duration_ms = Some(step_start.elapsed().as_millis() as u64);
-                step.output = Some(serde_json::json!({ "error": e.to_string() }));
-                let _ = self.store.create_step(&step).await;
-
-                let _ = self
-                    .event_sink
-                    .emit(RunEvent::Error {
-                        message: e.to_string(),
-                        recoverable: false,
-                    })
-                    .await;
-                return Err(AgentError::Domain(e));
-            }
-        };
-
-        let mut text = String::new();
-        let mut tool_calls: Vec<ToolCall> = Vec::new();
-        let mut p_tokens = 0u64;
-        let mut c_tokens = 0u64;
-
-        loop {
-            let chunk_opt = tokio::select! {
-                _ = params.cancellation_token.cancelled() => {
-                    return Err(AgentError::Cancelled);
+        let (mut text, tool_calls, mut p_tokens, mut c_tokens, finish_reason) =
+            match self.execute_llm_stream(&params, budget).await {
+                Ok(res) => res,
+                Err(e) => {
+                    self.record_step_failure(&mut step, step_start, &e).await;
+                    return Err(e);
                 }
-                chunk = stream.next() => chunk
             };
 
-            match chunk_opt {
-                Some(Ok(LlmChunk::Delta(delta))) => {
-                    text.push_str(&delta);
-                    self.event_sink
-                        .emit(RunEvent::MessageDelta { content: delta })
-                        .await?;
-                }
-                Some(Ok(LlmChunk::ToolCall(tc))) => {
-                    tool_calls.push(tc);
-                }
-                Some(Ok(LlmChunk::Usage(usage))) => {
-                    p_tokens += usage.prompt_tokens;
-                    c_tokens += usage.completion_tokens;
-                    budget.record_usage(&usage)?;
-                }
-                Some(Ok(LlmChunk::Done)) | None => break,
-                Some(Err(e)) => return Err(AgentError::Domain(e)),
-            }
+        if finish_reason.as_deref() == Some("length") && tool_calls.is_empty() && !text.is_empty() {
+            let _ = self
+                .run_continuation(&params, budget, &mut text, &mut p_tokens, &mut c_tokens)
+                .await;
         }
 
         step.status = StepStatus::Completed;
@@ -134,5 +80,167 @@ impl<'a> LlmRunner<'a> {
         let _ = self.store.create_step(&step).await;
 
         Ok((text, tool_calls, p_tokens, c_tokens))
+    }
+
+    async fn execute_llm_stream(
+        &self,
+        params: &LlmStepParams<'_>,
+        budget: &mut BudgetTracker,
+    ) -> Result<(String, Vec<ToolCall>, u64, u64, Option<String>), AgentError> {
+        let llm_config = LlmConfig {
+            model: params.agent.model.clone(),
+            max_tokens: None,
+            temperature: Some(0.7),
+        };
+
+        let stream_result = tokio::select! {
+            _ = params.cancellation_token.cancelled() => return Err(AgentError::Cancelled),
+            res = self.llm_provider.chat_stream(
+                params.working_messages.to_vec(),
+                params.active_tools.to_vec(),
+                llm_config,
+            ) => res
+        };
+
+        let mut stream = stream_result.map_err(AgentError::Domain)?;
+        let mut text = String::new();
+        let mut tool_calls: Vec<ToolCall> = Vec::new();
+        let mut p_tokens = 0u64;
+        let mut c_tokens = 0u64;
+        let mut finish_reason: Option<String> = None;
+
+        loop {
+            let chunk_opt = tokio::select! {
+                _ = params.cancellation_token.cancelled() => return Err(AgentError::Cancelled),
+                chunk = stream.next() => chunk
+            };
+
+            match chunk_opt {
+                Some(Ok(LlmChunk::Delta(delta))) => {
+                    text.push_str(&delta);
+                    self.event_sink
+                        .emit(RunEvent::MessageDelta { content: delta })
+                        .await?;
+                }
+                Some(Ok(LlmChunk::ToolCall(tc))) => tool_calls.push(tc),
+                Some(Ok(LlmChunk::Usage(usage))) => {
+                    p_tokens += usage.prompt_tokens;
+                    c_tokens += usage.completion_tokens;
+                    budget.record_usage(&usage)?;
+                }
+                Some(Ok(LlmChunk::FinishReason(r))) => finish_reason = Some(r),
+                Some(Ok(LlmChunk::Done)) | None => break,
+                Some(Err(e)) => return Err(AgentError::Domain(e)),
+            }
+        }
+
+        Ok((text, tool_calls, p_tokens, c_tokens, finish_reason))
+    }
+
+    async fn run_continuation(
+        &self,
+        params: &LlmStepParams<'_>,
+        budget: &mut BudgetTracker,
+        text: &mut String,
+        p_tokens: &mut u64,
+        c_tokens: &mut u64,
+    ) -> Result<(), AgentError> {
+        let mut continuations = 0;
+        let max_continuations = 3;
+
+        while continuations < max_continuations {
+            if params.cancellation_token.is_cancelled() || budget.check_limits().is_err() {
+                break;
+            }
+            continuations += 1;
+            tracing::info!(
+                "Phản hồi bị chạm giới hạn token (finish_reason=length). Đang kích hoạt tiếp tục sinh #{continuations}..."
+            );
+
+            let mut cont_messages = params.working_messages.to_vec();
+            cont_messages.push(LlmMessage {
+                role: "assistant".to_string(),
+                content: text.clone(),
+                tool_calls: None,
+                tool_call_id: None,
+            });
+            cont_messages.push(LlmMessage {
+                role: "user".to_string(),
+                content: "Vui lòng tiếp tục viết tiếp phần còn lại từ đúng điểm dừng trên, không lặp lại đoạn văn bản đã viết.".to_string(),
+                tool_calls: None,
+                tool_call_id: None,
+            });
+
+            let cont_config = LlmConfig {
+                model: params.agent.model.clone(),
+                max_tokens: None,
+                temperature: Some(0.7),
+            };
+
+            let stream_res = tokio::select! {
+                _ = params.cancellation_token.cancelled() => return Err(AgentError::Cancelled),
+                res = self.llm_provider.chat_stream(cont_messages, vec![], cont_config) => res
+            };
+
+            let mut stream = match stream_res {
+                Ok(s) => s,
+                Err(e) => {
+                    tracing::warn!("Lỗi khi khởi tạo stream tiếp tục: {e}");
+                    break;
+                }
+            };
+
+            let mut reason = None;
+            loop {
+                let chunk_opt = tokio::select! {
+                    _ = params.cancellation_token.cancelled() => return Err(AgentError::Cancelled),
+                    chunk = stream.next() => chunk
+                };
+
+                match chunk_opt {
+                    Some(Ok(LlmChunk::Delta(delta))) => {
+                        text.push_str(&delta);
+                        self.event_sink
+                            .emit(RunEvent::MessageDelta { content: delta })
+                            .await?;
+                    }
+                    Some(Ok(LlmChunk::Usage(usage))) => {
+                        *p_tokens += usage.prompt_tokens;
+                        *c_tokens += usage.completion_tokens;
+                        let _ = budget.record_usage(&usage);
+                    }
+                    Some(Ok(LlmChunk::FinishReason(r))) => reason = Some(r),
+                    Some(Ok(LlmChunk::Done)) | None => break,
+                    Some(Err(_)) => break,
+                    _ => {}
+                }
+            }
+
+            if reason.as_deref() != Some("length") {
+                break;
+            }
+        }
+
+        Ok(())
+    }
+
+    async fn record_step_failure(
+        &self,
+        step: &mut Step,
+        step_start: Instant,
+        err: &AgentError,
+    ) {
+        step.status = StepStatus::Failed;
+        step.duration_ms = Some(step_start.elapsed().as_millis() as u64);
+        step.output = Some(serde_json::json!({ "error": err.to_string() }));
+        let _ = self.store.create_step(step).await;
+
+        let _ = self
+            .event_sink
+            .emit(RunEvent::Error {
+                message: err.to_string(),
+                recoverable: false,
+            })
+            .await;
     }
 }

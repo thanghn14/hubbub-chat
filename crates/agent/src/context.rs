@@ -16,7 +16,7 @@ impl ContextBuilder {
         // 1. System Prompt with Current Time and Language Preference
         let now_utc = Utc::now().to_rfc3339();
         let system_content = format!(
-            "{}\n\n[Current Time (UTC): {}]\n[Instruction: Provide comprehensive, well-structured, in-depth answers. Do not rush or artificially truncate your explanations. When explaining concepts or code, provide complete runnable examples with thorough step-by-step reasoning. Reply in Vietnamese when the user asks in Vietnamese.]",
+            "{}\n\n[Current Time (UTC): {}]\n[Instruction: Provide comprehensive, well-structured, in-depth answers. Do not rush or artificially truncate your explanations. When explaining concepts or code, provide complete runnable examples with thorough step-by-step reasoning. Always conclude your thoughts cleanly and close all open code blocks, lists, and JSON blocks properly. Reply in Vietnamese when the user asks in Vietnamese.]",
             agent.system_prompt.trim(),
             now_utc
         );

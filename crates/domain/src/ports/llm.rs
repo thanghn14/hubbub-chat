@@ -43,11 +43,12 @@ pub struct LlmConfig {
     pub temperature: Option<f64>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LlmChunk {
     Delta(String),
     ToolCall(ToolCall),
     Usage(LlmUsage),
+    FinishReason(String),
     Done,
 }
 
@@ -82,7 +83,7 @@ impl ToolCall {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LlmUsage {
     pub prompt_tokens: u64,
     pub completion_tokens: u64,

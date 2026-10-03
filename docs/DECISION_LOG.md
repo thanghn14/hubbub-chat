@@ -4,6 +4,37 @@ Mọi quyết định quan trọng và thay đổi lớn trong quá trình phát
 Sắp xếp theo thứ tự thời gian (mới nhất ở trên).
 
 > **QUY TẮC:** PR/commit có thay đổi quan trọng mà KHÔNG cập nhật file này sẽ bị reject.
+
+## [2026-10-03] Khắc Phục Triệt Để Lỗi Phản Hồi Bị Cắt Giữa Chừng (Response Truncation & Auto-Continuation)
+
+**Bối cảnh:**
+Người dùng phản ánh phản hồi của Agent đôi khi không đầy đủ, bị cắt cụt giữa chừng (ví dụ: ngắt đột ngột ở giữa từ `đặc ru...`, `chia nhỏ...`, hoặc giữa khối mã JSON `"score...`).
+Kiểm tra thực tế trong cơ sở dữ liệu SQLite cục bộ xác nhận:
+1. `max_tokens` bị nhầm lẫn giữa Lifetime Budget và Single-Turn Limit: Trong `llm_runner.rs`, cấu hình `LlmConfig.max_tokens` truyền trực tiếp giá trị `budget.max_tokens` (200.000 tokens) vào tham số `max_tokens` của payload HTTP gửi lên Google Gemini / OpenAI. Đối với API của Google Gemini, giới hạn `maxOutputTokens` tối đa là 8.192 tokens. Khi gửi 200.000, API của Google hoặc ép hạn mức về giá trị mặc định nhỏ hơn nhiều, hoặc gây xung đột với bộ đệm suy nghĩ.
+2. Suy nghĩ ngầm (Extended Thinking) tiêu tốn token đầu ra: Trên các mô hình thế hệ mới (Gemini 2.5 / 3.8 Flash), các token suy luận nội bộ (`thought_signature` / thinking tokens) được tính gộp trực tiếp vào trần token đầu ra của lượt gọi. Khi hội thoại dài hoặc có nhiều công cụ, thinking tokens chiếm phần lớn ngân sách khiến phần câu trả lời hiển thị bị cạn kiệt token giữa chừng và trả về `finish_reason: "length"`.
+3. Thiếu cơ chế Tự động Nối tiếp (Auto-Continuation): Khi mô hình chạm trần token đầu ra (`finish_reason: "length"`), luồng SSE cũ chỉ đơn thuần kết thúc và coi như hoàn thành, lưu chuỗi văn bản cụt vào database mà không có cơ chế nối dài tiếp.
+
+**Quyết định & Giải pháp Triển khai:**
+1. **Phân định rõ ràng Hạn mức Lượt gọi và Ngân sách Vòng đời (`llm_runner.rs`):**
+   - Không gán `budget.max_tokens` (200.000) vào `LlmConfig.max_tokens`. Ngân sách vòng đời được kiểm soát an toàn bởi `BudgetTracker` trong Rust.
+   - Để `LlmConfig.max_tokens` mặc định là `None`, cho phép mô hình khai thác trọn vẹn giới hạn đầu ra tối đa của nó (8.192 tokens).
+2. **Kẹp an toàn Tham số Đầu ra (`openai_compat.rs`):**
+   - Trong `OpenAiCompatAdapter`, nếu `config.max_tokens` có giá trị, tự động kẹp (clamp) về ngưỡng an toàn của mô hình (`<= 8192` cho Gemini, `<= 16384` cho các mô hình khác) để tránh bị từ chối hoặc fallback sai lệch.
+3. **Bắt tín hiệu Kết thúc `finish_reason` & Tự động Nối tiếp (`Auto-Continuation`):**
+   - Bổ sung variant `LlmChunk::FinishReason(String)` vào port `LlmChunk` trong `hubbub-domain`.
+   - Trong `OpenAiStream` và `AnthropicStream`: bắt chính xác trường `finish_reason` từ API và phát thành `LlmChunk::FinishReason`.
+   - Trong `LlmRunner`: khi phát hiện phản hồi kết thúc vì chạm trần độ dài (`finish_reason == "length"`), hệ thống tự động kích hoạt lượt sinh tiếp theo (tối đa 3 lần), hướng dẫn mô hình tiếp tục viết tiếp từ điểm dừng mà không lặp lại đoạn đã viết. Các đoạn văn bản mới được nối liền mạch và stream trực tiếp ra giao diện người dùng.
+4. **Tăng cường Chỉ dẫn Hoàn thiện Cú pháp (`context.rs`):**
+   - Bổ sung chỉ dẫn hệ thống: *"Always conclude your thoughts cleanly and close all open code blocks, lists, and JSON blocks properly"*, đảm bảo mọi khối code markdown luôn đóng trọn vẹn.
+5. **Kiểm thử Toàn diện:**
+   - Tạo mới `crates/agent/tests/continuation_tests.rs`: kiểm thử xác minh tính năng tự động nối tiếp khi gặp `finish_reason: "length"`.
+   - Bổ sung test `test_gemini_stream_with_finish_reason_length` trong `crates/llm/tests/gemini_stream_tests.rs`.
+   - Toàn bộ workspace test PASS 100%, Clippy 0 warnings, Frontend build sạch sẽ.
+
+**Trạng thái:** Đã áp dụng
+
+---
+
 ## [2026-10-03] Xử lý Lỗi Giới hạn Tần suất Gọi API (HTTP 429 Rate Limit) & Tự Động Hồi Phục Quota
 
 **Bối cảnh:**

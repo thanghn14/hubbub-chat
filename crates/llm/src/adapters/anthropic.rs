@@ -266,6 +266,15 @@ impl LlmStream for AnthropicStream {
                             }
                         }
                         "message_delta" => {
+                            if let Some(stop_reason) = parsed
+                                .get("delta")
+                                .and_then(|d| d.get("stop_reason"))
+                                .and_then(Value::as_str)
+                            {
+                                let reason = if stop_reason == "max_tokens" { "length" } else { stop_reason };
+                                self.pending_chunks
+                                    .push_back(LlmChunk::FinishReason(reason.to_string()));
+                            }
                             if let Some(out_tok) = parsed
                                 .get("usage")
                                 .and_then(|u| u.get("output_tokens"))

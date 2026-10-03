@@ -582,3 +582,4 @@ async fn test_concurrent_reads_and_writes_wal() {
         .expect("list messages");
     assert_eq!(messages.len(), 10);
 }
+
