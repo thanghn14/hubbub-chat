@@ -166,6 +166,7 @@ impl LlmProvider for OpenAiCompatAdapter {
 pub struct OpenAiStream {
     reader: SseEventReader,
     accumulated_tool_calls: BTreeMap<usize, ToolCall>,
+    last_usage: Option<LlmUsage>,
     pending_chunks: VecDeque<LlmChunk>,
     finished: bool,
 }
@@ -175,6 +176,7 @@ impl OpenAiStream {
         Self {
             reader: SseEventReader::new(response),
             accumulated_tool_calls: BTreeMap::new(),
+            last_usage: None,
             pending_chunks: VecDeque::new(),
             finished: false,
         }
@@ -183,6 +185,17 @@ impl OpenAiStream {
     fn flush_tool_calls(&mut self) {
         for (_, tc) in std::mem::take(&mut self.accumulated_tool_calls) {
             self.pending_chunks.push_back(LlmChunk::ToolCall(tc));
+        }
+    }
+
+    fn finish_stream(&mut self) {
+        if !self.finished {
+            self.flush_tool_calls();
+            if let Some(usage) = self.last_usage.take() {
+                self.pending_chunks.push_back(LlmChunk::Usage(usage));
+            }
+            self.pending_chunks.push_back(LlmChunk::Done);
+            self.finished = true;
         }
     }
 }
@@ -202,9 +215,7 @@ impl LlmStream for OpenAiStream {
             match self.reader.next_event().await {
                 Ok(Some(event)) => {
                     if event.data == "[DONE]" {
-                        self.flush_tool_calls();
-                        self.pending_chunks.push_back(LlmChunk::Done);
-                        self.finished = true;
+                        self.finish_stream();
                         return self.pending_chunks.pop_front().map(Ok);
                     }
 
@@ -214,17 +225,17 @@ impl LlmStream for OpenAiStream {
                         continue;
                     };
 
-                    // Check top-level usage (e.g. from stream_options)
+                    // Record or update usage if present (e.g. from stream_options or Gemini)
                     if let Some((pt, ct)) = parsed.get("usage").and_then(|u| {
                         Some((
                             u.get("prompt_tokens")?.as_u64()?,
                             u.get("completion_tokens")?.as_u64()?,
                         ))
                     }) {
-                        return Some(Ok(LlmChunk::Usage(LlmUsage {
+                        self.last_usage = Some(LlmUsage {
                             prompt_tokens: pt,
                             completion_tokens: ct,
-                        })));
+                        });
                     }
 
                     // Check choices[0]
@@ -284,11 +295,7 @@ impl LlmStream for OpenAiStream {
                     }
                 }
                 Ok(None) => {
-                    self.flush_tool_calls();
-                    if !self.finished {
-                        self.pending_chunks.push_back(LlmChunk::Done);
-                        self.finished = true;
-                    }
+                    self.finish_stream();
                     return self.pending_chunks.pop_front().map(Ok);
                 }
                 Err(e) => return Some(Err(e.into())),

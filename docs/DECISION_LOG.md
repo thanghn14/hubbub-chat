@@ -6,6 +6,30 @@ Sắp xếp theo thứ tự thời gian (mới nhất ở trên).
 > **QUY TẮC:** PR/commit có thay đổi quan trọng mà KHÔNG cập nhật file này sẽ bị reject.
 > Áp dụng cho cả Dev và Agent (AI).
 
+## [2026-10-03] Sửa lỗi Phản hồi Rỗng (Empty Response) khi Chat với Google Gemini
+
+**Bối cảnh:** Khi người dùng gửi tin nhắn trò chuyện với Google Gemini (`gemini-3.8-flash`), API trả về thành công mã HTTP 200, tuy nhiên giao diện chat không hiển thị bất kỳ nội dung nào và tin nhắn kết quả của tác tử bị rỗng (`""`).
+
+**Nguyên nhân gốc rễ (Root Cause):**
+- Google Gemini endpoint OpenAI-compatible gửi trường `usage: { prompt_tokens, completion_tokens }` trong **mọi gói tin SSE chunk** cùng lúc với `choices: [{ delta: { content: "..." } }]`.
+- Trong bộ phân tích SSE `OpenAiStream` (`crates/llm/src/adapters/openai_compat.rs`), logic cũ kiểm tra trường `usage` trước và thực hiện `return Some(Ok(LlmChunk::Usage(...)))` ngay lập tức, dẫn tới việc bỏ qua hoàn toàn phần `choices[0].delta.content` trong cùng chunk đó. Vì gói tin nào cũng có `usage`, tất cả các đoạn văn bản (text delta) đều bị loại bỏ, dẫn đến `text` tích lũy cuối cùng luôn là chuỗi rỗng `""`.
+
+**Quyết định & Khắc phục:**
+1. **Lưu trữ Trạng thái Usage Thay vì Return Ngắt Dòng:**
+   - Trong `OpenAiStream`, bổ sung trường `last_usage: Option<LlmUsage>`. Khi nhận được thông tin `usage` trong chunk SSE (dù là ở mọi chunk như Gemini hay ở chunk cuối như OpenAI), lưu lại `last_usage = Some(...)` và tiếp tục phân tích `choices[0].delta` mà không ngắt dòng.
+2. **Phát Sinh Sự Kiện Usage ở Cuối Luồng:**
+   - Khi luồng stream nhận được `[DONE]` hoặc kết thúc dữ liệu (`Ok(None)`), hàm `finish_stream()` sẽ đẩy `LlmChunk::Usage(last_usage)` trước `LlmChunk::Done`.
+   - Đảm bảo token usage được ghi nhận đúng và duy nhất 1 lần ở cuối tiến trình thực thi, không bị nhân bội và không làm rớt text streaming.
+3. **Bổ sung Kiểm thử Hồi quy (`crates/llm/tests/gemini_stream_tests.rs`):**
+   - Viết test `test_gemini_stream_with_usage_and_content_in_same_chunk` mô phỏng chính xác định dạng gói SSE chứa đồng thời `usage` và `content` của Gemini. Test xác minh thu thập trọn vẹn văn bản và ghi nhận đúng usage.
+   - Toàn bộ 37/37 tests PASS, `cargo clippy` 0 warning.
+
+**Hệ quả:** Khắc phục triệt để lỗi phản hồi rỗng; tác tử Gemini Analyst hiển thị văn bản streaming thời gian thực mượt mà và lưu trữ đầy đủ nội dung câu trả lời.
+
+**Trạng thái:** Đã áp dụng
+
+---
+
 ## [2026-10-03] Nâng cấp Mô hình Google Gemini sang `gemini-3.8-flash`
 
 **Bối cảnh:** Khi người dùng gửi tin nhắn trò chuyện với tác tử `Gemini Analyst`, Google AI Studio API trả về lỗi 404: `This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.8-flash for the latest features and improvements`. Google đã chính thức ngừng cung cấp mô hình `gemini-2.0-flash` trên API và chuyển sang thế hệ mô hình mới `gemini-3.8-flash` (phát hành tháng 9/2026).
