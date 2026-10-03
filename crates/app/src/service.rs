@@ -197,6 +197,8 @@ impl AppService {
             "anthropic"
         } else if agent.model.starts_with("llama") {
             "ollama"
+        } else if agent.model.starts_with("gemini") {
+            "gemini"
         } else {
             &self.config.default_provider
         };

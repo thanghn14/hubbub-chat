@@ -8,6 +8,7 @@ import {
   Search,
   BookOpen,
   GraduationCap,
+  Sparkles,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -45,6 +46,8 @@ export const Sidebar = ({
         return <BookOpen className="w-3.5 h-3.5 text-emerald-400" />;
       case 'tutor':
         return <GraduationCap className="w-3.5 h-3.5 text-amber-400" />;
+      case 'analyst':
+        return <Sparkles className="w-3.5 h-3.5 text-cyan-400" />;
       default:
         return <Bot className="w-3.5 h-3.5 text-zinc-400" />;
     }
@@ -87,7 +90,7 @@ export const Sidebar = ({
             <span>Tác tử (Agent)</span>
             <span className="text-[10px] text-zinc-400">{agents.length} sẵn dùng</span>
           </div>
-          <div className="grid grid-cols-3 gap-1 p-1 bg-zinc-950/60 rounded-lg border border-zinc-800/60">
+          <div className="grid grid-cols-2 gap-1 p-1 bg-zinc-950/60 rounded-lg border border-zinc-800/60">
             {agents.map((agent) => {
               const active = agent.id === selectedAgentId;
               return (

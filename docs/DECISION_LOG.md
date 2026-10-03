@@ -6,6 +6,29 @@ Sắp xếp theo thứ tự thời gian (mới nhất ở trên).
 > **QUY TẮC:** PR/commit có thay đổi quan trọng mà KHÔNG cập nhật file này sẽ bị reject.
 > Áp dụng cho cả Dev và Agent (AI).
 
+## [2026-10-03] Bổ sung Hỗ trợ Google Gemini & Tác tử Gemini Analyst
+
+**Bối cảnh:** Google Gemini (Gemini 2.0 Flash, Gemini 1.5 Pro) là họ mô hình AI tốc độ cao, hỗ trợ ngữ cảnh lớn (1M - 2M tokens) và có chi phí tối ưu. Google cung cấp endpoint REST tương thích chuẩn OpenAI tại `https://generativelanguage.googleapis.com/v1beta/openai`. Cần bổ sung Gemini vào hệ thống cấu hình provider, kho bảo mật, định tuyến runtime và giao diện người dùng.
+
+**Quyết định:**
+1. **Cấu hình Nhà Cung Cấp (`AppConfig`):**
+   - Bổ sung cấu hình provider `gemini` vào `AppConfig::default()`, sử dụng `kind: "openai_compat"`, `base_url: "https://generativelanguage.googleapis.com/v1beta/openai"`, và model mặc định `gemini-2.0-flash`.
+2. **Định Tuyến Mô Hình Tự Động (`AppService`):**
+   - Tự động nhận diện các model có tiền tố `gemini*` để định tuyến yêu cầu về provider `gemini` và kiểm tra khóa bảo mật `gemini_api_key`.
+3. **Cung Cấp Tác Tử Mẫu Mới (`Gemini Analyst`):**
+   - Bổ sung tác tử `analyst` (Gemini Analyst) trong `seed.rs` sử dụng mô hình `gemini-2.0-flash`, tích hợp công cụ `web_search` và `report_write` với quyền truy cập mở.
+4. **Giao Diện Người Dùng (SettingsModal & Sidebar):**
+   - Đưa Google Gemini vào danh sách cấu hình API key trong `SettingsModal.tsx` với placeholder `AIzaSy...`.
+   - Cập nhật Sidebar hiển thị icon `Sparkles` màu cyan cho tác tử Analyst và điều chỉnh lưới hiển thị 2x2 cân đối cho 4 tác tử.
+5. **Kiểm thử Toàn diện:**
+   - Bổ sung kiểm thử nạp cấu hình và khởi tạo provider `gemini` trong `app_tests.rs`. Toàn bộ 36/36 tests PASS, clippy 0 warning, build thành công 100%.
+
+**Hệ quả:** Người dùng hiện có thể cấu hình API key Google Gemini và trò chuyện trực tiếp với tác tử Gemini Analyst mượt mà.
+
+**Trạng thái:** Đã áp dụng
+
+---
+
 ## [2026-10-02] Hoàn thành Sprint 1.6: React UI Chat MVP & Kết thúc Phase 1 (apps/desktop/src)
 
 **Bối cảnh:** Triển khai giao diện người dùng Desktop Chat MVP trên React 19 + TypeScript + Vite + Tailwind CSS (`apps/desktop/src`), kết nối trực tiếp với backend Rust Core thông qua Tauri 2 IPC commands và streaming events `run_event`. Mục tiêu là cung cấp trải nghiệm chat đa tác tử mượt mà, hỗ trợ bộ gõ tiếng Việt (IME), hiển thị thời gian thực các bước thực thi công cụ (tools), quản lý API keys an toàn (write-only), chuyển đổi tác tử (Agent Switcher), và duy trì Gate 0 Benchmark Spike phục vụ kiểm thử hiệu năng.

@@ -107,5 +107,32 @@ Help users learn complex topics by breaking them down into digestible concepts w
             },
             version: 1,
         },
+        Agent {
+            id: "analyst".to_string(),
+            name: "Gemini Analyst".to_string(),
+            model: "gemini-2.0-flash".to_string(),
+            system_prompt: r#"You are a Fast Analyst Agent powered by Google Gemini.
+You specialize in processing large contexts, synthesizing research data rapidly, and generating actionable insights."#
+                .to_string(),
+            tools: AgentTools {
+                builtin: vec!["web_search".to_string(), "report_write".to_string()],
+                mcp: vec![],
+            },
+            permissions: AgentPermissions {
+                fs_read: vec![],
+                fs_write: vec!["reports/**".to_string()],
+                network: NetworkPolicy::Open,
+            },
+            budget: AgentBudget {
+                max_steps: 25,
+                max_tokens: 200_000,
+                max_cost_usd: 0.5,
+                timeout_s: 300,
+            },
+            delegation: AgentDelegation {
+                can_delegate_to: vec![],
+            },
+            version: 1,
+        },
     ]
 }

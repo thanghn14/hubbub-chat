@@ -26,6 +26,7 @@ async fn test_app_config_load_and_save() {
     assert!(loaded.providers.contains_key("openai"));
     assert!(loaded.providers.contains_key("anthropic"));
     assert!(loaded.providers.contains_key("ollama"));
+    assert!(loaded.providers.contains_key("gemini"));
 }
 
 #[tokio::test]
@@ -94,13 +95,19 @@ async fn test_app_service_agents() {
     let service = AppService::new(config, store, vault, tool_host);
 
     let agents = service.list_agents().await;
-    assert!(agents.len() >= 3);
+    assert!(agents.len() >= 4);
 
     let researcher = service.get_agent("researcher").await;
     assert!(researcher.is_some());
     let r = researcher.unwrap();
     assert_eq!(r.id, "researcher");
     assert!(r.tools.builtin.contains(&"web_search".to_string()));
+
+    let analyst = service.get_agent("analyst").await;
+    assert!(analyst.is_some());
+    let a = analyst.unwrap();
+    assert_eq!(a.id, "analyst");
+    assert_eq!(a.model, "gemini-2.0-flash");
 }
 
 #[tokio::test]
@@ -118,6 +125,9 @@ async fn test_app_service_build_llm_provider() {
     let anthropic_provider =
         service.build_llm_provider("anthropic", Some("sk-ant-test".to_string()));
     assert!(anthropic_provider.is_ok());
+
+    let gemini_provider = service.build_llm_provider("gemini", Some("AIzaSy-test".to_string()));
+    assert!(gemini_provider.is_ok());
 
     let unknown_provider = service.build_llm_provider("unknown_provider", None);
     match unknown_provider {

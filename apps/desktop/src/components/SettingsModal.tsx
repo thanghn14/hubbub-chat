@@ -17,6 +17,12 @@ interface ProviderInfo {
 
 const PROVIDERS: ProviderInfo[] = [
   {
+    id: 'gemini',
+    name: 'Google Gemini',
+    description: 'Gemini 2.0 Flash, Gemini 1.5 Pro (Google AI Studio)',
+    placeholder: 'AIzaSy...',
+  },
+  {
     id: 'openai',
     name: 'OpenAI',
     description: 'GPT-4o, GPT-4o-mini và các model OpenAI',
