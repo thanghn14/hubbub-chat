@@ -95,7 +95,7 @@ async fn test_app_service_agents() {
     let service = AppService::new(config, store, vault, tool_host);
 
     let agents = service.list_agents().await;
-    assert!(agents.len() >= 4);
+    assert_eq!(agents.len(), 6);
 
     let researcher = service.get_agent("researcher").await;
     assert!(researcher.is_some());
@@ -108,6 +108,26 @@ async fn test_app_service_agents() {
     let a = analyst.unwrap();
     assert_eq!(a.id, "analyst");
     assert_eq!(a.model, "gemini-3.8-flash");
+
+    // Test set_agent_model
+    service
+        .set_agent_model("analyst", "gpt-4o-mini")
+        .await
+        .unwrap();
+    let updated = service.get_agent("analyst").await.unwrap();
+    assert_eq!(updated.model, "gpt-4o-mini");
+
+    // Test upsert_agent (create custom functional agent)
+    let mut custom = a.clone();
+    custom.id = "custom_devops".to_string();
+    custom.name = "Chuyên gia DevOps".to_string();
+    custom.model = "gemini-3.8-flash".to_string();
+    service.upsert_agent(custom).await.unwrap();
+    assert!(service.get_agent("custom_devops").await.is_some());
+
+    // Test delete_agent
+    service.delete_agent("custom_devops").await.unwrap();
+    assert!(service.get_agent("custom_devops").await.is_none());
 }
 
 #[tokio::test]

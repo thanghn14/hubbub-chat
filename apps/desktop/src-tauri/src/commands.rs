@@ -77,6 +77,43 @@ pub async fn list_agents(service: State<'_, Arc<AppService>>) -> Result<Vec<Agen
     Ok(service.list_agents().await)
 }
 
+/// Tauri IPC command: set model for an agent.
+#[tauri::command]
+pub async fn set_agent_model(
+    agent_id: String,
+    model: String,
+    service: State<'_, Arc<AppService>>,
+) -> Result<(), String> {
+    service
+        .set_agent_model(&agent_id, &model)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Tauri IPC command: create or update an agent.
+#[tauri::command]
+pub async fn upsert_agent(
+    agent: Agent,
+    service: State<'_, Arc<AppService>>,
+) -> Result<(), String> {
+    service
+        .upsert_agent(agent)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Tauri IPC command: delete an agent.
+#[tauri::command]
+pub async fn delete_agent(
+    agent_id: String,
+    service: State<'_, Arc<AppService>>,
+) -> Result<(), String> {
+    service
+        .delete_agent(&agent_id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
 /// Tauri IPC command: store provider API key (write-only).
 #[tauri::command]
 pub async fn set_provider_key(

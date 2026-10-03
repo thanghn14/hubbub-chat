@@ -4,6 +4,7 @@ import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { Sidebar } from './components/Sidebar';
 import { ChatView } from './components/ChatView';
 import { SettingsModal } from './components/SettingsModal';
+import { AgentModal } from './components/AgentModal';
 import { BenchmarkSpike } from './components/BenchmarkSpike';
 import type { Conversation, Message, Agent, Run, RunEvent, ToolLog } from './types';
 
@@ -11,7 +12,7 @@ export default function App() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [agents, setAgents] = useState<Agent[]>([]);
-  const [selectedAgentId, setSelectedAgentId] = useState<string>('researcher');
+  const [selectedAgentId, setSelectedAgentId] = useState<string>('analyst');
   const [messages, setMessages] = useState<Message[]>([]);
 
   // Streaming & Execution State
@@ -23,6 +24,7 @@ export default function App() {
 
   // Modals & Panels
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [isAgentModalOpen, setIsAgentModalOpen] = useState<boolean>(false);
   const [showBenchmark, setShowBenchmark] = useState<boolean>(false);
   const [appVersion, setAppVersion] = useState<string>('0.1.0');
 
@@ -258,6 +260,43 @@ export default function App() {
     }
   }, [activeRunId]);
 
+  // Handle changing agent model
+  const handleSelectModel = useCallback(
+    async (model: string) => {
+      if (!selectedAgentId) return;
+      try {
+        await invoke('set_agent_model', { agentId: selectedAgentId, model });
+        setAgents((prev) =>
+          prev.map((a) => (a.id === selectedAgentId ? { ...a, model } : a))
+        );
+      } catch (err) {
+        console.error('Failed to set agent model:', err);
+        alert(`Lỗi khi đổi model cho agent: ${String(err)}`);
+      }
+    },
+    [selectedAgentId]
+  );
+
+  // Handle saving new or updated functional agent
+  const handleSaveAgent = useCallback(async (newAgent: Agent) => {
+    try {
+      await invoke('upsert_agent', { agent: newAgent });
+      setAgents((prev) => {
+        const existingIdx = prev.findIndex((a) => a.id === newAgent.id);
+        if (existingIdx >= 0) {
+          const next = [...prev];
+          next[existingIdx] = newAgent;
+          return next;
+        }
+        return [...prev, newAgent];
+      });
+      setSelectedAgentId(newAgent.id);
+    } catch (err) {
+      console.error('Failed to save agent:', err);
+      throw err;
+    }
+  }, []);
+
   // Get active conversation and agent
   const activeConversation = conversations.find((c) => c.id === activeConversationId);
   const currentAgent = agents.find((a) => a.id === selectedAgentId) || agents[0] || null;
@@ -283,6 +322,7 @@ export default function App() {
         selectedAgentId={selectedAgentId}
         onSelectAgent={(agentId: string) => setSelectedAgentId(agentId)}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenCreateAgent={() => setIsAgentModalOpen(true)}
         showBenchmark={showBenchmark}
         onToggleBenchmark={() => setShowBenchmark(true)}
         appVersion={appVersion}
@@ -296,6 +336,7 @@ export default function App() {
         agent={currentAgent}
         onSendMessage={handleSendMessage}
         onCancelRun={handleCancelRun}
+        onSelectModel={handleSelectModel}
         isStreaming={isStreaming}
         streamingText={streamingText}
         activeTools={activeTools}
@@ -307,6 +348,13 @@ export default function App() {
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+      />
+
+      {/* Agent Modal (Create & Configure Functional Agents) */}
+      <AgentModal
+        isOpen={isAgentModalOpen}
+        onClose={() => setIsAgentModalOpen(false)}
+        onSaveAgent={handleSaveAgent}
       />
     </div>
   );

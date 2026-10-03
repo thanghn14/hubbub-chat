@@ -6,6 +6,45 @@ Sắp xếp theo thứ tự thời gian (mới nhất ở trên).
 > **QUY TẮC:** PR/commit có thay đổi quan trọng mà KHÔNG cập nhật file này sẽ bị reject.
 > Áp dụng cho cả Dev và Agent (AI).
 
+## [2026-10-03] Phân chia Agent theo Chức năng (Decoupled from Models) & Tối ưu Cuộn màn hình kiểu Gemini
+
+**Bối cảnh:**
+1. **Trải nghiệm cuộn khi streaming:** Trước đây màn hình liên tục auto-scroll xuống đáy theo từng token văn bản streaming, khiến người dùng bị cuốn theo và không thể đọc được phần đầu câu trả lời. Người dùng mong muốn màn hình đứng yên ở phần đầu nội dung câu hỏi/câu trả lời, trong khi nội dung tiếp tục được gen dài xuống phía dưới (giống giao diện Google Gemini).
+2. **Kiến trúc Tác tử (Agents):** Trước đây Agent bị gắn cứng với tên Model (ví dụ `Gemini Analyst`, hoặc các agent khác bị gắn với model Claude/OpenAI khiến người dùng có key Gemini không dùng được). Người dùng yêu cầu: Agent phải được phân chia theo **chức năng / nhiệm vụ** chứ không phải theo Model. Một model duy nhất (như `gemini-3.8-flash`) có thể dùng để vận hành nhiều Agent khác nhau cho từng nhiệm vụ, đồng thời người dùng có thể đổi model hoặc tạo thêm Agent mới theo nhu cầu.
+
+**Quyết định & Triển khai:**
+1. **Cơ chế Giữ màn hình đứng yên kiểu Gemini (`ChatView.tsx`):**
+   - Loại bỏ việc auto-scroll theo `streamingText` và `activeTools`.
+   - Khi người dùng gửi tin nhắn hoặc khi streaming bắt đầu, tự động cuộn nhẹ nhàng để đưa câu hỏi và phần đầu câu trả lời vào vị trí đọc tự nhiên (`block: 'start'`).
+   - Trong suốt quá trình Agent sinh nội dung (streaming tokens), màn hình giữ nguyên vị trí hoàn toàn, cho phép người dùng đọc liên tục từ đoạn văn đầu tiên trong khi nội dung mới xuất hiện mở rộng dần xuống phía dưới.
+2. **Tái cấu trúc Tác tử theo Chức năng (`seed.rs`):**
+   - Định nghĩa lại 6 tác tử mẫu chuyên biệt theo vai trò chức năng:
+     - `analyst` - **Chuyên viên Phân tích**: Phân tích logic, tổng hợp dữ liệu, báo cáo chi tiết.
+     - `developer` - **Kỹ sư Lập trình**: Lập trình đa ngôn ngữ, review code, debug, thiết kế kiến trúc.
+     - `researcher` - **Trợ lý Nghiên cứu**: Thu thập thông tin web, đối chiếu đa nguồn, trích dẫn URL.
+     - `writer` - **Biên tập & Soạn thảo**: Soạn thảo tài liệu kỹ thuật, bài viết, email, tóm tắt.
+     - `tutor` - **Gia sư Đồng hành**: Hướng dẫn học tập từng bước (Socratic), giải thích trực quan.
+     - `librarian` - **Thủ thư Quản lý Tệp**: Quản trị ghi chú, tệp tin nội bộ workspace.
+   - Mặc định tất cả các tác tử chức năng này đều có thể chạy ngay với `gemini-3.8-flash` (hoặc bất kỳ model nào được cấu hình).
+3. **Bộ chọn Mô hình Linh hoạt (`ModelSelector.tsx`):**
+   - Tích hợp component chọn model trực tiếp trên thanh tiêu đề của ChatView.
+   - Cho phép người dùng chuyển đổi mô hình AI chạy cho tác tử hiện tại (Google Gemini, OpenAI, Claude, Groq, Ollama) với 1 cú click.
+4. **Tạo Tác tử Tùy chỉnh (`AgentModal.tsx` & Tauri IPC):**
+   - Bổ sung nút "+ Tạo Agent" trên Sidebar cho phép người dùng tạo thêm bất kỳ Agent chuyên biệt nào (chọn tên nhiệm vụ, system prompt, model vận hành, và danh mục tools).
+   - Bổ sung các lệnh Tauri IPC: `set_agent_model`, `upsert_agent`, `delete_agent`.
+   - Tự động lưu trữ danh sách tác tử vào file `workspace/data/agents.json` để duy trì qua các phiên sử dụng.
+5. **Kiểm thử Toàn diện:**
+   - 37/37 tests PASS (`cargo test --workspace`).
+   - `cargo clippy --workspace --all-targets -- -D warnings` đạt 0 cảnh báo.
+   - `npm run build` trong `apps/desktop` đạt 0 lỗi.
+   - Tất cả 11 files mã nguồn đều tuân thủ nghiêm ngặt giới hạn dưới 400 dòng code.
+
+**Hệ quả:** Người dùng có thể sử dụng trọn vẹn sức mạnh của một mô hình (như Google Gemini) để phục vụ nhiều chuyên gia AI khác nhau; giao diện đọc khi streaming êm ái, tĩnh tại và tự nhiên như Google Gemini.
+
+**Trạng thái:** Đã áp dụng
+
+---
+
 ## [2026-10-03] Tái thiết kế Giao diện Chat theo phong cách Gemini/Antigravity & Tối ưu Chất lượng Phản hồi
 
 **Bối cảnh:** 

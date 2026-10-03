@@ -6,12 +6,12 @@ import {
   Bot,
   Wrench,
   CheckCircle2,
-  XCircle,
-  Loader2,
   Sparkles,
   AlertTriangle,
 } from 'lucide-react';
 import { MarkdownContent } from './MarkdownContent';
+import { ModelSelector } from './ModelSelector';
+import { ActiveToolsList } from './ActiveToolsList';
 
 interface ChatViewProps {
   conversationId: string;
@@ -20,6 +20,7 @@ interface ChatViewProps {
   agent: Agent | null;
   onSendMessage: (prompt: string) => Promise<void>;
   onCancelRun: () => void;
+  onSelectModel: (model: string) => Promise<void>;
   isStreaming: boolean;
   streamingText: string;
   activeTools: ToolLog[];
@@ -34,6 +35,7 @@ export const ChatView = ({
   agent,
   onSendMessage,
   onCancelRun,
+  onSelectModel,
   isStreaming,
   streamingText,
   activeTools,
@@ -43,11 +45,28 @@ export const ChatView = ({
   const [input, setInput] = useState('');
   const [isComposing, setIsComposing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const activeTurnRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const prevIsStreamingRef = useRef(false);
+  const prevConvIdRef = useRef(_conversationId);
 
+  // 1. When switching conversation, scroll to the bottom of the conversation
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, streamingText, activeTools]);
+    if (prevConvIdRef.current !== _conversationId) {
+      prevConvIdRef.current = _conversationId;
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+    }
+  }, [_conversationId, messages]);
+
+  // 2. When a run starts (streaming begins), scroll to bring the prompt/start of response into view.
+  // CRITICAL: We do NOT scroll during token generation (streamingText updates), keeping the viewport
+  // stationary at the top of the answer, exactly like Google Gemini.
+  useEffect(() => {
+    if (isStreaming && !prevIsStreamingRef.current) {
+      activeTurnRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    prevIsStreamingRef.current = isStreaming;
+  }, [isStreaming]);
 
   useEffect(() => {
     textareaRef.current?.focus();
@@ -61,6 +80,9 @@ export const ChatView = ({
       textareaRef.current.style.height = 'auto';
     }
     onSendMessage(prompt);
+    setTimeout(() => {
+      activeTurnRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 60);
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -91,9 +113,11 @@ export const ChatView = ({
             <div className="flex items-center gap-2 text-[11px] text-zinc-400">
               <span className="text-indigo-400 font-medium">{agent?.name || 'AI Assistant'}</span>
               <span>•</span>
-              <span className="font-mono text-[10px] text-zinc-400">
-                {agent?.model || 'gemini-3.8-flash'}
-              </span>
+              <ModelSelector
+                currentModel={agent?.model || 'gemini-3.8-flash'}
+                onSelectModel={onSelectModel}
+                disabled={isStreaming}
+              />
             </div>
           </div>
         </div>
@@ -145,10 +169,14 @@ export const ChatView = ({
             </div>
           ) : (
             <>
-              {messages.map((msg) =>
+              {messages.map((msg, idx) =>
                 msg.role === 'user' ? (
                   /* User Message: Box message on the right */
-                  <div key={msg.id} className="flex justify-end my-4">
+                  <div
+                    key={msg.id}
+                    ref={idx === messages.length - 1 ? activeTurnRef : undefined}
+                    className="flex justify-end my-4 scroll-mt-6"
+                  >
                     <div className="bg-zinc-800/95 hover:bg-zinc-800 text-zinc-100 border border-zinc-700/50 rounded-2xl rounded-tr-xs px-4 py-2.5 max-w-2xl shadow-xs transition-colors">
                       {msg.parts.map((part, pIdx) => {
                         if (part.type === 'Text') {
@@ -254,7 +282,14 @@ export const ChatView = ({
 
               {/* Streaming Assistant Message: Rendered directly on background */}
               {isStreaming && (
-                <div className="w-full my-6 flex gap-3.5">
+                <div
+                  ref={
+                    messages.length === 0 || messages[messages.length - 1].role !== 'user'
+                      ? activeTurnRef
+                      : undefined
+                  }
+                  className="w-full my-6 flex gap-3.5 scroll-mt-6"
+                >
                   <div className="w-7 h-7 rounded-lg shrink-0 flex items-center justify-center text-xs font-semibold select-none bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 mt-0.5">
                     <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
                   </div>
@@ -271,32 +306,7 @@ export const ChatView = ({
                     </div>
 
                     {/* Active Tools display */}
-                    {activeTools.length > 0 && (
-                      <div className="space-y-1.5 mb-2.5 max-w-md">
-                        {activeTools.map((tool) => (
-                          <div
-                            key={tool.id}
-                            className="p-2 bg-zinc-900/60 border border-zinc-800/80 rounded-lg text-[11px] font-mono flex items-center justify-between"
-                          >
-                            <div className="flex items-center gap-2">
-                              {tool.status === 'running' && (
-                                <Loader2 className="w-3 h-3 animate-spin text-indigo-400 shrink-0" />
-                              )}
-                              {tool.status === 'completed' && (
-                                <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
-                              )}
-                              {tool.status === 'failed' && (
-                                <XCircle className="w-3 h-3 text-red-400 shrink-0" />
-                              )}
-                              <span className="text-zinc-300 font-medium">{tool.name}</span>
-                            </div>
-                            <span className="text-zinc-400 truncate max-w-xs text-[10px]">
-                              {tool.summary || tool.preview}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    <ActiveToolsList tools={activeTools} />
 
                     {/* Streaming Markdown text with blinking cursor */}
                     <div className="select-text text-xs leading-relaxed text-zinc-200">

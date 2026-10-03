@@ -9,6 +9,8 @@ import {
   BookOpen,
   GraduationCap,
   Sparkles,
+  Code2,
+  PenTool,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -20,6 +22,7 @@ interface SidebarProps {
   selectedAgentId: string;
   onSelectAgent: (id: string) => void;
   onOpenSettings: () => void;
+  onOpenCreateAgent: () => void;
   showBenchmark: boolean;
   onToggleBenchmark: () => void;
   appVersion: string;
@@ -34,20 +37,25 @@ export const Sidebar = ({
   selectedAgentId,
   onSelectAgent,
   onOpenSettings,
+  onOpenCreateAgent,
   showBenchmark,
   onToggleBenchmark,
   appVersion,
 }: SidebarProps) => {
   const getAgentIcon = (id: string) => {
     switch (id) {
+      case 'analyst':
+        return <Sparkles className="w-3.5 h-3.5 text-indigo-400" />;
+      case 'developer':
+        return <Code2 className="w-3.5 h-3.5 text-cyan-400" />;
       case 'researcher':
-        return <Search className="w-3.5 h-3.5 text-indigo-400" />;
-      case 'librarian':
-        return <BookOpen className="w-3.5 h-3.5 text-emerald-400" />;
+        return <Search className="w-3.5 h-3.5 text-blue-400" />;
+      case 'writer':
+        return <PenTool className="w-3.5 h-3.5 text-purple-400" />;
       case 'tutor':
         return <GraduationCap className="w-3.5 h-3.5 text-amber-400" />;
-      case 'analyst':
-        return <Sparkles className="w-3.5 h-3.5 text-cyan-400" />;
+      case 'librarian':
+        return <BookOpen className="w-3.5 h-3.5 text-emerald-400" />;
       default:
         return <Bot className="w-3.5 h-3.5 text-zinc-400" />;
     }
@@ -87,17 +95,37 @@ export const Sidebar = ({
         {/* Agent Selector Section */}
         <div className="px-3 pb-2">
           <div className="text-[11px] font-medium text-zinc-400 px-1 mb-1.5 flex items-center justify-between">
-            <span>Tác tử (Agent)</span>
-            <span className="text-[10px] text-zinc-400">{agents.length} sẵn dùng</span>
+            <span>Tác tử chức năng</span>
+            <button
+              onClick={onOpenCreateAgent}
+              title="Tạo thêm Agent mới cho nhiệm vụ riêng"
+              className="text-[10px] text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-0.5 transition-colors"
+            >
+              <Plus className="w-3 h-3" /> Tạo Agent
+            </button>
           </div>
-          <div className="grid grid-cols-2 gap-1 p-1 bg-zinc-950/60 rounded-lg border border-zinc-800/60">
+          <div className="grid grid-cols-2 gap-1 p-1 bg-zinc-950/60 rounded-lg border border-zinc-800/60 max-h-48 overflow-y-auto">
             {agents.map((agent) => {
               const active = agent.id === selectedAgentId;
+              const shortName =
+                agent.id === 'analyst'
+                  ? 'Phân tích'
+                  : agent.id === 'developer'
+                  ? 'Lập trình'
+                  : agent.id === 'researcher'
+                  ? 'Nghiên cứu'
+                  : agent.id === 'writer'
+                  ? 'Biên tập'
+                  : agent.id === 'tutor'
+                  ? 'Gia sư'
+                  : agent.id === 'librarian'
+                  ? 'Thủ thư'
+                  : agent.name.replace(/^(Agent|Tác tử)\s*/i, '');
               return (
                 <button
                   key={agent.id}
                   onClick={() => onSelectAgent(agent.id)}
-                  title={`${agent.name} (${agent.model})`}
+                  title={`${agent.name} • ${agent.model}`}
                   className={`py-1.5 px-2 rounded-md text-[11px] font-medium flex flex-col items-center gap-1 transition-all ${
                     active
                       ? 'bg-zinc-800 text-zinc-100 shadow-xs border border-zinc-700/60'
@@ -105,7 +133,7 @@ export const Sidebar = ({
                   }`}
                 >
                   {getAgentIcon(agent.id)}
-                  <span className="truncate w-full text-center">{agent.name.split(' ')[0]}</span>
+                  <span className="truncate w-full text-center text-[10px]">{shortName}</span>
                 </button>
               );
             })}

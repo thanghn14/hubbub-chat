@@ -65,7 +65,34 @@ impl AppService {
         let vault = Arc::new(KeyringVault::new("hubbub"));
         let tool_host = Arc::new(BuiltinToolHost::new());
 
-        Ok(Self::new(config, store, vault, tool_host))
+        let agents_path = data_dir.join("agents.json");
+        let mut map = HashMap::new();
+        for def in default_agents() {
+            map.insert(def.id.clone(), def);
+        }
+
+        let saved_agents_opt: Option<Vec<Agent>> = std::fs::read_to_string(&agents_path)
+            .ok()
+            .and_then(|content| serde_json::from_str(&content).ok());
+        if let Some(saved_agents) = saved_agents_opt {
+            for saved in saved_agents {
+                map.insert(saved.id.clone(), saved);
+            }
+        }
+
+        // Migrate legacy analyst name if present
+        if let Some(analyst) = map.get_mut("analyst").filter(|a| a.name == "Gemini Analyst") {
+            analyst.name = "Chuyên viên Phân tích".to_string();
+        }
+
+        Ok(Self {
+            config,
+            store,
+            vault,
+            tool_host,
+            agents: Arc::new(RwLock::new(map)),
+            active_cancellations: Arc::new(Mutex::new(HashMap::new())),
+        })
     }
 
     // --- Conversation Management ---
@@ -136,12 +163,61 @@ impl AppService {
 
     pub async fn list_agents(&self) -> Vec<Agent> {
         let map = self.agents.read().await;
-        map.values().cloned().collect()
+        let mut list: Vec<Agent> = map.values().cloned().collect();
+        list.sort_by(|a, b| a.id.cmp(&b.id));
+        list
     }
 
     pub async fn get_agent(&self, id: &str) -> Option<Agent> {
         let map = self.agents.read().await;
         map.get(id).cloned()
+    }
+
+    pub async fn upsert_agent(&self, agent: Agent) -> Result<(), AppError> {
+        {
+            let mut map = self.agents.write().await;
+            map.insert(agent.id.clone(), agent);
+        }
+        let _ = self.save_agents_to_disk().await;
+        Ok(())
+    }
+
+    pub async fn set_agent_model(&self, agent_id: &str, model: &str) -> Result<(), AppError> {
+        {
+            let mut map = self.agents.write().await;
+            if let Some(agent) = map.get_mut(agent_id) {
+                agent.model = model.to_string();
+            } else {
+                return Err(AppError::NotFound(format!("Không tìm thấy agent: {agent_id}")));
+            }
+        }
+        let _ = self.save_agents_to_disk().await;
+        Ok(())
+    }
+
+    pub async fn delete_agent(&self, agent_id: &str) -> Result<(), AppError> {
+        {
+            let mut map = self.agents.write().await;
+            map.remove(agent_id);
+        }
+        let _ = self.save_agents_to_disk().await;
+        Ok(())
+    }
+
+    async fn save_agents_to_disk(&self) -> Result<(), AppError> {
+        let data_dir = self.config.workspace_dir.join("data");
+        if !data_dir.exists() {
+            return Ok(());
+        }
+        let agents_path = data_dir.join("agents.json");
+        let map = self.agents.read().await;
+        let agents: Vec<Agent> = map.values().cloned().collect();
+        let json = serde_json::to_string_pretty(&agents)
+            .map_err(|e| AppError::Agent(format!("Lỗi serialize agents: {e}")))?;
+        tokio::fs::write(&agents_path, json)
+            .await
+            .map_err(AppError::Io)?;
+        Ok(())
     }
 
     // --- Provider Factory ---
@@ -195,10 +271,19 @@ impl AppService {
         // 2. Resolve provider & API key
         let provider_name = if agent.model.starts_with("claude") {
             "anthropic"
-        } else if agent.model.starts_with("llama") {
-            "ollama"
         } else if agent.model.starts_with("gemini") {
             "gemini"
+        } else if agent.model.starts_with("llama") {
+            if self.has_provider_key("groq").await.unwrap_or(false) {
+                "groq"
+            } else {
+                "ollama"
+            }
+        } else if agent.model.starts_with("gpt")
+            || agent.model.starts_with("o1")
+            || agent.model.starts_with("o3")
+        {
+            "openai"
         } else {
             &self.config.default_provider
         };
@@ -211,7 +296,7 @@ impl AppService {
             return Err(AppError::Provider {
                 provider: provider_name.to_string(),
                 message: format!(
-                    "Chưa cấu hình API key cho provider '{provider_name}'. Vui lòng nhập API key trong cài đặt."
+                    "Chưa cấu hình API key cho provider '{provider_name}'. Vui lòng cấu hình API key trong Cài đặt hoặc đổi Model của Agent sang mô hình đã có key (như gemini-3.8-flash)."
                 ),
             });
         }
