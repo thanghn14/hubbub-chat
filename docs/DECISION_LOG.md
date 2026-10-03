@@ -6,21 +6,21 @@ Sắp xếp theo thứ tự thời gian (mới nhất ở trên).
 > **QUY TẮC:** PR/commit có thay đổi quan trọng mà KHÔNG cập nhật file này sẽ bị reject.
 > Áp dụng cho cả Dev và Agent (AI).
 
-## [2026-10-03] Nâng cấp Mô hình Google Gemini sang `gemini-2.5-flash`
+## [2026-10-03] Nâng cấp Mô hình Google Gemini sang `gemini-3.8-flash`
 
-**Bối cảnh:** Khi người dùng gửi tin nhắn trò chuyện với tác tử `Gemini Analyst`, Google AI Studio API trả về lỗi 404: `This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-2.5-flash for the latest features and improvements`. Google đã chính thức ngừng cung cấp mô hình `gemini-2.0-flash` trên API và chuyển sang `gemini-2.5-flash`.
+**Bối cảnh:** Khi người dùng gửi tin nhắn trò chuyện với tác tử `Gemini Analyst`, Google AI Studio API trả về lỗi 404: `This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.8-flash for the latest features and improvements`. Google đã chính thức ngừng cung cấp mô hình `gemini-2.0-flash` trên API và chuyển sang thế hệ mô hình mới `gemini-3.8-flash` (phát hành tháng 9/2026).
 
 **Quyết định:**
 1. **Cập nhật Cấu hình Mặc định (`AppConfig`):**
-   - Đổi `default_model` của provider `gemini` từ `gemini-2.0-flash` thành `gemini-2.5-flash` trong `crates/app/src/config.rs`.
+   - Đổi `default_model` của provider `gemini` thành `gemini-3.8-flash` trong `crates/app/src/config.rs`.
 2. **Cập nhật Tác tử Gemini Analyst (`seed.rs`):**
-   - Đổi `model` của tác tử `analyst` thành `gemini-2.5-flash` trong `crates/app/src/seed.rs`.
+   - Đổi `model` của tác tử `analyst` thành `gemini-3.8-flash` trong `crates/app/src/seed.rs`.
 3. **Cập nhật Giao diện Cài đặt (`SettingsModal.tsx`):**
-   - Cập nhật mô tả hiển thị của nhà cung cấp Gemini thành `Gemini 2.5 Flash, Gemini 1.5 Pro (Google AI Studio)`.
+   - Cập nhật mô tả hiển thị của nhà cung cấp Gemini thành `Gemini 3.8 Flash, Gemini 1.5 Pro (Google AI Studio)`.
 4. **Kiểm thử Hồi quy (`app_tests.rs`):**
-   - Cập nhật unit test assertion kiểm tra model của `analyst` sang `gemini-2.5-flash`. Toàn bộ 36/36 tests PASS.
+   - Cập nhật unit test assertion kiểm tra model của `analyst` sang `gemini-3.8-flash`. Toàn bộ 36/36 tests PASS.
 
-**Hệ quả:** Khắc phục triệt để lỗi 404 từ Google API; người dùng có thể trò chuyện với Gemini Analyst bằng `gemini-2.5-flash` mượt mà, phản hồi nhanh và hỗ trợ ngữ cảnh lớn.
+**Hệ quả:** Khắc phục triệt để lỗi 404 từ Google API; người dùng có thể trò chuyện với Gemini Analyst bằng `gemini-3.8-flash` mượt mà, phản hồi nhanh và hỗ trợ ngữ cảnh lớn 1M tokens.
 
 **Trạng thái:** Đã áp dụng
 

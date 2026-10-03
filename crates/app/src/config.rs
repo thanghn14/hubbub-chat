@@ -86,7 +86,7 @@ impl Default for AppConfig {
                 base_url: Some(
                     "https://generativelanguage.googleapis.com/v1beta/openai".to_string(),
                 ),
-                default_model: "gemini-2.5-flash".to_string(),
+                default_model: "gemini-3.8-flash".to_string(),
                 timeout_s: 60,
                 max_retries: 2,
             },

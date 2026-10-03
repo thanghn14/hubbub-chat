@@ -19,7 +19,7 @@ const PROVIDERS: ProviderInfo[] = [
   {
     id: 'gemini',
     name: 'Google Gemini',
-    description: 'Gemini 2.5 Flash, Gemini 1.5 Pro (Google AI Studio)',
+    description: 'Gemini 3.8 Flash, Gemini 1.5 Pro (Google AI Studio)',
     placeholder: 'AIzaSy...',
   },
   {

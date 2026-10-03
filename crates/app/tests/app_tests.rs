@@ -107,7 +107,7 @@ async fn test_app_service_agents() {
     assert!(analyst.is_some());
     let a = analyst.unwrap();
     assert_eq!(a.id, "analyst");
-    assert_eq!(a.model, "gemini-2.5-flash");
+    assert_eq!(a.model, "gemini-3.8-flash");
 }
 
 #[tokio::test]

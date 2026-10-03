@@ -110,7 +110,7 @@ Help users learn complex topics by breaking them down into digestible concepts w
         Agent {
             id: "analyst".to_string(),
             name: "Gemini Analyst".to_string(),
-            model: "gemini-2.5-flash".to_string(),
+            model: "gemini-3.8-flash".to_string(),
             system_prompt: r#"You are a Fast Analyst Agent powered by Google Gemini.
 You specialize in processing large contexts, synthesizing research data rapidly, and generating actionable insights."#
                 .to_string(),
