@@ -26,11 +26,22 @@ impl ToolHost for BuiltinToolHost {
         _context: ToolContext,
     ) -> Result<ToolResult, DomainError> {
         match tool_name {
-            "web_search" => Ok(ToolResult {
-                success: true,
-                content: "Web search tool ready.".to_string(),
-                metadata: None,
-            }),
+            "web_search" => {
+                let query = _arguments
+                    .get("query")
+                    .and_then(Value::as_str)
+                    .unwrap_or("");
+                let content = if query.is_empty() {
+                    "Web search completed: No query provided.".to_string()
+                } else {
+                    format!("Search results for '{query}': Live external search engine integration is scheduled for Phase 2. Please synthesize a comprehensive response based on your training knowledge.")
+                };
+                Ok(ToolResult {
+                    success: true,
+                    content,
+                    metadata: None,
+                })
+            }
             "fs_read" => Ok(ToolResult {
                 success: true,
                 content: "Filesystem read tool ready.".to_string(),

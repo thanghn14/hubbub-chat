@@ -80,11 +80,7 @@ impl FakeLlm {
     pub async fn push_tool_call(&self, id: &str, name: &str, arguments: &str) {
         self.push_response(FakeResponse {
             chunks: vec![
-                Ok(LlmChunk::ToolCall(ToolCall {
-                    id: id.to_string(),
-                    name: name.to_string(),
-                    arguments: arguments.to_string(),
-                })),
+                Ok(LlmChunk::ToolCall(ToolCall::new(id, name, arguments))),
                 Ok(LlmChunk::Done),
             ],
             chunk_delay: None,

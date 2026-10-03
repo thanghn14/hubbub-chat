@@ -238,6 +238,7 @@ impl AgentRuntime {
                 id: tc.id.clone(),
                 name: tc.name.clone(),
                 arguments: parsed_args,
+                extra_content: tc.extra_content.clone(),
             });
         }
 

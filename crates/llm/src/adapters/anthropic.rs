@@ -217,11 +217,11 @@ impl LlmStream for AnthropicStream {
                                     .and_then(Value::as_str)
                                     .unwrap_or("")
                                     .to_string();
-                                self.current_tool_call = Some(ToolCall {
+                                self.current_tool_call = Some(ToolCall::new(
                                     id,
                                     name,
-                                    arguments: String::new(),
-                                });
+                                    String::new(),
+                                ));
                             }
                         }
                         "content_block_delta" => {

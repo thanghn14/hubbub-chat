@@ -51,37 +51,15 @@ impl LlmProvider for OpenAiCompatAdapter {
         config: LlmConfig,
     ) -> Result<Box<dyn LlmStream>, DomainError> {
         let endpoint = self.build_endpoint();
+        let is_gemini = config.model.to_lowercase().contains("gemini")
+            || self
+                .config
+                .base_url
+                .as_deref()
+                .unwrap_or("")
+                .contains("googleapis.com");
 
-        // Convert messages to OpenAI JSON format
-        let openai_messages: Vec<Value> = messages
-            .into_iter()
-            .map(|m| {
-                let mut obj = serde_json::json!({
-                    "role": m.role,
-                    "content": m.content,
-                });
-                if let Some(tool_calls) = m.tool_calls {
-                    let tc_val: Vec<Value> = tool_calls
-                        .into_iter()
-                        .map(|tc| {
-                            serde_json::json!({
-                                "id": tc.id,
-                                "type": "function",
-                                "function": {
-                                    "name": tc.name,
-                                    "arguments": tc.arguments,
-                                }
-                            })
-                        })
-                        .collect();
-                    obj["tool_calls"] = Value::Array(tc_val);
-                }
-                if let Some(tcid) = m.tool_call_id {
-                    obj["tool_call_id"] = Value::String(tcid);
-                }
-                obj
-            })
-            .collect();
+        let openai_messages = build_openai_messages(messages, is_gemini);
 
         let mut payload = serde_json::json!({
             "model": config.model,
@@ -259,26 +237,15 @@ impl LlmStream for OpenAiStream {
                                     let entry = self
                                         .accumulated_tool_calls
                                         .entry(idx)
-                                        .or_insert_with(|| ToolCall {
-                                            id: String::new(),
-                                            name: String::new(),
-                                            arguments: String::new(),
-                                        });
+                                        .or_insert_with(|| ToolCall::new("", "", ""));
 
-                                    if let Some(id) = tc.get("id").and_then(Value::as_str) {
-                                        entry.id = id.to_string();
-                                    }
-
-                                    if let Some(func) = tc.get("function") {
-                                        if let Some(name) = func.get("name").and_then(Value::as_str)
-                                        {
-                                            entry.name = name.to_string();
-                                        }
-                                        if let Some(args) =
-                                            func.get("arguments").and_then(Value::as_str)
-                                        {
-                                            entry.arguments.push_str(args);
-                                        }
+                                    update_tool_call_delta(entry, tc);
+                                }
+                            }
+                            if let Some(delta_extra) = delta.get("extra_content") {
+                                for entry in self.accumulated_tool_calls.values_mut() {
+                                    if entry.extra_content.is_none() {
+                                        entry.extra_content = Some(delta_extra.clone());
                                     }
                                 }
                             }
@@ -302,4 +269,85 @@ impl LlmStream for OpenAiStream {
             }
         }
     }
+}
+
+fn update_tool_call_delta(entry: &mut ToolCall, tc: &Value) {
+    if let Some(id) = tc.get("id").and_then(Value::as_str) {
+        entry.id = id.to_string();
+    }
+
+    if let Some(extra) = tc.get("extra_content") {
+        entry.extra_content = Some(extra.clone());
+    } else if let Some(sig) = tc.get("thought_signature").and_then(Value::as_str) {
+        entry.extra_content = Some(serde_json::json!({
+            "google": { "thought_signature": sig }
+        }));
+    }
+
+    if let Some(func) = tc.get("function") {
+        if let Some(name) = func.get("name").and_then(Value::as_str) {
+            entry.name = name.to_string();
+        }
+        if let Some(args) = func.get("arguments").and_then(Value::as_str) {
+            entry.arguments.push_str(args);
+        }
+        if entry.extra_content.is_none() {
+            if let Some(extra) = func.get("extra_content") {
+                entry.extra_content = Some(extra.clone());
+            } else if let Some(sig) = func.get("thought_signature").and_then(Value::as_str) {
+                entry.extra_content = Some(serde_json::json!({
+                    "google": { "thought_signature": sig }
+                }));
+            }
+        }
+    }
+}
+
+fn build_openai_messages(messages: Vec<LlmMessage>, is_gemini: bool) -> Vec<Value> {
+    messages
+        .into_iter()
+        .map(|m| {
+            let mut obj = serde_json::json!({
+                "role": m.role,
+                "content": m.content,
+            });
+            if let Some(tool_calls) = m.tool_calls {
+                let tc_val: Vec<Value> = tool_calls
+                    .into_iter()
+                    .map(|tc| build_tool_call_value(tc, is_gemini))
+                    .collect();
+                obj["tool_calls"] = Value::Array(tc_val);
+            }
+            if let Some(tcid) = m.tool_call_id {
+                obj["tool_call_id"] = Value::String(tcid);
+            }
+            obj
+        })
+        .collect()
+}
+
+fn build_tool_call_value(tc: ToolCall, is_gemini: bool) -> Value {
+    let mut tc_obj = serde_json::json!({
+        "id": tc.id,
+        "type": "function",
+        "function": {
+            "name": tc.name,
+            "arguments": tc.arguments,
+        }
+    });
+
+    if let Some(extra) = tc.extra_content {
+        tc_obj["extra_content"] = extra;
+    } else if is_gemini {
+        // Gemini 3.x enforces Thought Signatures on function calls in conversation history.
+        // If a real signature was not captured or was loaded from older DB records,
+        // use Google's official sentinel value to bypass validation and avoid 400 errors.
+        tc_obj["extra_content"] = serde_json::json!({
+            "google": {
+                "thought_signature": "skip_thought_signature_validator"
+            }
+        });
+    }
+
+    tc_obj
 }

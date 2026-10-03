@@ -66,11 +66,13 @@ impl ContextBuilder {
                                 id,
                                 name,
                                 arguments,
+                                extra_content,
                             } => {
                                 tool_calls.push(ToolCall {
                                     id: id.clone(),
                                     name: name.clone(),
                                     arguments: arguments.to_string(),
+                                    extra_content: extra_content.clone(),
                                 });
                             }
                             _ => {}

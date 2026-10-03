@@ -6,6 +6,39 @@ Sắp xếp theo thứ tự thời gian (mới nhất ở trên).
 > **QUY TẮC:** PR/commit có thay đổi quan trọng mà KHÔNG cập nhật file này sẽ bị reject.
 > Áp dụng cho cả Dev và Agent (AI).
 
+## [2026-10-03] Xử lý Gemini Thought Signatures & Bảo toàn Ngữ cảnh Tool Calling (Multi-turn)
+
+**Bối cảnh:**
+Khi người dùng tương tác với các tác tử có kích hoạt công cụ (như `analyst`, `researcher` với công cụ `web_search`) sử dụng mô hình Google Gemini (`gemini-3.8-flash` hoặc các model thuộc thế hệ Gemini 3.x), model đã gọi công cụ `web_search`. Sau khi Hubbub thực thi công cụ và gửi lại lịch sử hội thoại lên API cho lượt tiếp theo (turn 2), Google Gemini từ chối yêu cầu với lỗi `400 INVALID_ARGUMENT`:
+`Function call is missing a thought_signature in functionCall parts. This is required for tools to work correctly... Additional data, function call default_api:web_search, position 6.`
+
+**Nguyên nhân:**
+Thế hệ mô hình Gemini 3.x sử dụng cơ chế "Extended Thinking" và mã hóa trạng thái suy luận thành một token mật mã `thought_signature`. Trong luồng tương thích OpenAI (`/v1beta/openai/chat/completions`), token này được trả về trong `choice.delta.tool_calls[i].extra_content.google.thought_signature`. Khi client gửi tiếp lượt hội thoại có chứa kết quả công cụ, Gemini yêu cầu trong phần tin nhắn `assistant` trước đó, mỗi phần tử `tool_calls` phải kèm theo chính xác `extra_content` chứa `thought_signature` ban đầu. Trước đây, adapter chỉ lưu `{id, name, arguments}` và loại bỏ toàn bộ metadata này, dẫn đến việc Gemini báo lỗi 400.
+
+**Quyết định & Giải pháp Triển khai:**
+1. **Mở rộng Domain Entities & Ports (`hubbub-domain`):**
+   - Bổ sung trường `extra_content: Option<serde_json::Value>` vào struct `ToolCall` trong port `hubbub_domain::ports::llm`, kèm các helper constructors `ToolCall::new` và `with_extra_content`.
+   - Bổ sung `extra_content: Option<serde_json::Value>` vào `MessagePart::ToolCall` trong `hubbub_domain::entities::conversation` với thuộc tính `#[serde(default, skip_serializing_if = "Option::is_none")]`. Điều này đảm bảo tính tương thích tuyệt đối 100% với các bản ghi tin nhắn lịch sử đã lưu trước đó trong cơ sở dữ liệu SQLite.
+2. **Bảo tồn và Tái tạo Ngữ cảnh qua SQLite (`hubbub-agent`):**
+   - Trong `AgentRuntime::handle_assistant_tool_calls`, lưu giữ `tc.extra_content` vào `MessagePart::ToolCall` khi ghi xuống database.
+   - Trong `ContextBuilder::build`, tái tạo `ToolCall` kèm `extra_content` nguyên vẹn từ các tin nhắn trong SQLite để đưa vào ngữ cảnh hội thoại cho các lượt gọi LLM tiếp theo.
+3. **Thu thập & Tự Động Phục Hồi trong LLM Adapter (`hubbub-llm`):**
+   - Trong `OpenAiStream`, trích xuất `extra_content` hoặc `thought_signature` từ SSE chunks (hỗ trợ cả ở cấp `tool_calls[i]`, `function`, và `delta`) và tích lũy vào `ToolCall`.
+   - Trong `OpenAiCompatAdapter::build_openai_messages`:
+     * Nếu `tc.extra_content` có sẵn, gửi lại nguyên vẹn `extra_content` lên API.
+     * **Cơ chế Fallback Sentinel:** Nếu `extra_content` không có sẵn (ví dụ các tin nhắn cũ trong cơ sở dữ liệu được tạo trước khi có bản vá này) và mô hình đang gọi là Gemini, tự động chèn giá trị sentinel chính thức của Google: `skip_thought_signature_validator` (`{"google": {"thought_signature": "skip_thought_signature_validator"}}`). Giá trị này chỉ thị cho Gemini API bỏ qua bước xác thực chữ ký của lượt cũ mà không gây lỗi 400.
+     * Đối với các model ngoài Gemini (như OpenAI, Anthropic), không chèn thêm trường thừa này.
+4. **Cải tiến Công cụ Giả lập (`hubbub-tools`):**
+   - Nâng cấp `web_search` trong `BuiltinToolHost` trả về nội dung mô phỏng chi tiết có chứa từ khóa truy vấn thay vì chuỗi ngắn "Web search tool ready.", giúp mô hình dễ dàng tổng hợp câu trả lời tự nhiên.
+5. **Kiểm thử Toàn diện (Test-First & Regression):**
+   - `crates/llm/tests/gemini_tests.rs`: 5 test case kiểm thử việc bảo toàn signature qua SSE stream, gửi round-trip, và fallback sentinel khi thiếu signature.
+   - `crates/agent/tests/thought_signature_tests.rs`: Kiểm thử quy trình Agent Runtime thực thi tool call, lưu trữ signature xuống SQLite và tái tạo context cho lượt kế tiếp.
+   - Toàn bộ 42/42 tests trong workspace PASS 100%, clippy đạt 0 warnings, frontend build thành công.
+
+**Trạng thái:** Đã áp dụng
+
+---
+
 ## [2026-10-03] Phân chia Agent theo Chức năng (Decoupled from Models) & Tối ưu Cuộn màn hình kiểu Gemini
 
 **Bối cảnh:**

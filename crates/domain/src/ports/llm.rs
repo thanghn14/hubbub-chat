@@ -51,11 +51,35 @@ pub enum LlmChunk {
     Done,
 }
 
-#[derive(Debug, Clone)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ToolCall {
     pub id: String,
     pub name: String,
     pub arguments: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub extra_content: Option<serde_json::Value>,
+}
+
+impl ToolCall {
+    pub fn new(
+        id: impl Into<String>,
+        name: impl Into<String>,
+        arguments: impl Into<String>,
+    ) -> Self {
+        Self {
+            id: id.into(),
+            name: name.into(),
+            arguments: arguments.into(),
+            extra_content: None,
+        }
+    }
+
+    pub fn with_extra_content(mut self, extra: Option<serde_json::Value>) -> Self {
+        self.extra_content = extra;
+        self
+    }
 }
 
 #[derive(Debug, Clone)]

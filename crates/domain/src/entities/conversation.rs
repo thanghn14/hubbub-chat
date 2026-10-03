@@ -41,6 +41,8 @@ pub enum MessagePart {
         id: String,
         name: String,
         arguments: serde_json::Value,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        extra_content: Option<serde_json::Value>,
     },
     ToolResult {
         tool_call_id: String,
