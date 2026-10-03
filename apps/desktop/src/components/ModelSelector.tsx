@@ -15,6 +15,7 @@ interface ModelOption {
 
 const COMMON_MODELS: ModelOption[] = [
   { id: 'gemini-3.8-flash', name: 'Gemini 3.8 Flash (Khuyên dùng)', provider: 'Google Gemini' },
+  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (15 RPM Free)', provider: 'Google Gemini' },
   { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', provider: 'Google Gemini' },
   { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'OpenAI' },
   { id: 'gpt-4o', name: 'GPT-4o', provider: 'OpenAI' },

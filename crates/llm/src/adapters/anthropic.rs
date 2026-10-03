@@ -3,7 +3,7 @@ use serde_json::Value;
 use std::collections::VecDeque;
 
 use crate::config::ProviderConfig;
-use crate::errors::LlmError;
+use crate::errors::{extract_retry_delay, format_api_error, LlmError};
 use crate::sse::SseEventReader;
 use hubbub_domain::errors::DomainError;
 use hubbub_domain::ports::llm::{
@@ -119,26 +119,38 @@ impl LlmProvider for AnthropicAdapter {
                     let status = resp.status();
                     if status.is_success() {
                         return Ok(Box::new(AnthropicStream::new(resp)));
-                    } else if (status.is_server_error()
-                        || status == reqwest::StatusCode::TOO_MANY_REQUESTS)
-                        && attempt <= max_retries
-                    {
+                    }
+
+                    let headers = resp.headers().clone();
+                    let err_text = resp.text().await.unwrap_or_default();
+
+                    if status == reqwest::StatusCode::TOO_MANY_REQUESTS && attempt <= max_retries {
+                        let delay = extract_retry_delay(&headers, &err_text)
+                            .unwrap_or_else(|| std::time::Duration::from_millis(1000 * (1 << (attempt - 1))));
+                        if delay <= std::time::Duration::from_secs(35) {
+                            tracing::warn!(
+                                "Hit 429 rate limit (attempt {attempt}/{max_retries}). Sleeping {delay:?} before retry..."
+                            );
+                            tokio::time::sleep(delay + std::time::Duration::from_millis(500)).await;
+                            continue;
+                        }
+                    } else if status.is_server_error() && attempt <= max_retries {
                         tokio::time::sleep(std::time::Duration::from_millis(
-                            50 * (1 << (attempt - 1)),
+                            200 * (1 << (attempt - 1)),
                         ))
                         .await;
                         continue;
-                    } else {
-                        let err_text = resp.text().await.unwrap_or_default();
-                        return Err(LlmError::Api {
-                            status: status.as_u16(),
-                            message: err_text,
-                        }
-                        .into());
                     }
+
+                    let message = format_api_error(status.as_u16(), &err_text, &config.model);
+                    return Err(LlmError::Api {
+                        status: status.as_u16(),
+                        message,
+                    }
+                    .into());
                 }
                 Err(_e) if attempt <= max_retries => {
-                    tokio::time::sleep(std::time::Duration::from_millis(50 * (1 << (attempt - 1))))
+                    tokio::time::sleep(std::time::Duration::from_millis(200 * (1 << (attempt - 1))))
                         .await;
                     continue;
                 }

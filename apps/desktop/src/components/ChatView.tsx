@@ -72,6 +72,14 @@ export const ChatView = ({
     textareaRef.current?.focus();
   }, [conversationTitle]);
 
+  const cleanError = (err: string) => {
+    let s = err;
+    s = s.replace(/^(Agent error:\s*)+/i, '');
+    s = s.replace(/^(Domain error:\s*)+/i, '');
+    s = s.replace(/^(Internal error:\s*)+/i, '');
+    return s.trim();
+  };
+
   const handleSend = () => {
     if (!input.trim() || isStreaming) return;
     const prompt = input.trim();
@@ -326,15 +334,15 @@ export const ChatView = ({
       {/* Error Banner */}
       {errorMsg && (
         <div className="mx-5 mb-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center justify-between text-xs text-red-300">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 min-w-0">
             <AlertTriangle className="w-4 h-4 shrink-0 text-red-400" />
-            <span>{errorMsg}</span>
+            <span className="leading-relaxed break-words">{cleanError(errorMsg)}</span>
           </div>
           <button
             onClick={onOpenSettings}
-            className="px-2.5 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-200 border border-red-500/30 rounded-md font-medium text-[11px] transition-colors"
+            className="px-2.5 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-200 border border-red-500/30 rounded-md font-medium text-[11px] transition-colors shrink-0 ml-3"
           >
-            Cấu hình API Key
+            Cấu hình
           </button>
         </div>
       )}

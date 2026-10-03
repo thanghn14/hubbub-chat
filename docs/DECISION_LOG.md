@@ -4,6 +4,33 @@ Mọi quyết định quan trọng và thay đổi lớn trong quá trình phát
 Sắp xếp theo thứ tự thời gian (mới nhất ở trên).
 
 > **QUY TẮC:** PR/commit có thay đổi quan trọng mà KHÔNG cập nhật file này sẽ bị reject.
+## [2026-10-03] Xử lý Lỗi Giới hạn Tần suất Gọi API (HTTP 429 Rate Limit) & Tự Động Hồi Phục Quota
+
+**Bối cảnh:**
+Khi người dùng chat với tác tử có kích hoạt công cụ tìm kiếm và duyệt web (`analyst`, `researcher`), tác tử có thể thực hiện chuỗi nhiều lượt gọi LLM trong cùng một hội thoại (ví dụ: Turn 1 gọi `web_search` -> Turn 2 gọi `web_fetch` -> Turn 3 tổng hợp câu trả lời). Với gói Miễn phí (Free Tier) của Google AI Studio cho mô hình `gemini-3.8-flash`, Google áp dụng hạn mức khắt khe **5 yêu cầu/phút (5 RPM)**. Khi số yêu cầu vượt quá 5 trong vòng 60 giây, Google trả về lỗi HTTP `429 RESOURCE_EXHAUSTED`:
+`"Quota exceeded for metric: .../generate_content_free_tier_requests, limit: 5, model: gemini-3.8-flash. Please retry in 25.447400747s."` kèm `retryDelay: "25s"`.
+
+Trước đây:
+1. Hubbub chỉ retry với khoảng nghỉ ngắn 50ms, 100ms, 200ms (tổng cộng ~350ms), bỏ qua hoàn toàn khuyến cáo `retryDelay: 25s` của Google. Do đó toàn bộ các lần retry đều thất bại ngay tức thì.
+2. Khi thất bại, app trả về chuỗi JSON thô `Agent error: Domain error: Internal error: API error (429): [{ "error": ... }]` hiển thị lên giao diện rất khó nhìn và không chỉ dẫn cho người dùng.
+
+**Quyết định & Giải pháp Triển khai:**
+1. **Trích xuất Động Thời gian Chờ (`extract_retry_delay`):**
+   - Trong `crates/llm/src/errors.rs`, xây dựng hàm `extract_retry_delay` phân tích cả header `Retry-After` lẫn cấu trúc JSON của Google RPC (`/error/details[].retryDelay` và chuỗi `Please retry in Xs`).
+2. **Cơ chế Tự Động Chờ Phục Hồi Hạn Mức (Smart 429 Backoff):**
+   - Trong `OpenAiCompatAdapter` và `AnthropicAdapter`: khi gặp HTTP 429, nếu thời gian chờ `delay <= 35s` và chưa vượt quá số lần thử lại (`max_retries`), hệ thống sẽ tạm dừng và tự động ngủ đúng số giây máy chủ yêu cầu (+500ms dự phòng), sau đó tự động gửi lại request.
+   - Nhờ đó, người dùng không bị gián đoạn hay nhận thông báo lỗi; yêu cầu sẽ tự động hoàn tất ngay khi quota phút mới của Google mở ra.
+3. **Định dạng Thông báo Thân thiện (`format_api_error`):**
+   - Nếu đã hết số lần retry hoặc thời gian chờ quá lâu, hệ thống chuyển đổi lỗi 429 thành thông điệp tiếng Việt rõ ràng, giải thích cụ thể nguyên nhân (gói Free Tier 5 RPM của model) và đưa ra gợi ý giải pháp (chờ Xs hoặc chuyển sang model có hạn mức cao hơn như `gemini-2.5-flash`).
+4. **Bổ sung `gemini-2.5-flash` vào Danh mục Mô hình Nhanh:**
+   - Trong `ModelSelector.tsx`, bổ sung lựa chọn `Gemini 2.5 Flash (15 RPM Free)` (hạn mức Free Tier cao gấp 3 lần `gemini-3.8-flash`) để người dùng dễ dàng chuyển đổi khi cần.
+5. **Tối ưu Hiển thị Lỗi trên Giao diện (`ChatView.tsx`):**
+   - Loại bỏ các tiền tố kỹ thuật lặp lại (`Agent error: Domain error: Internal error:`) khỏi Error Banner.
+
+**Trạng thái:** Đã áp dụng
+
+---
+
 ## [2026-10-03] Triển khai Phase 2: Security Policy Engine (`hubbub-policy`) & Live Web Tools (`hubbub-tools`)
 
 **Bối cảnh:**
