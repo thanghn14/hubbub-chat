@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { Sidebar } from './components/Sidebar';
 import { ChatView } from './components/ChatView';
+import { WorkspaceReportsView } from './components/WorkspaceReportsView';
 import { SettingsModal } from './components/SettingsModal';
 import { AgentModal } from './components/AgentModal';
 import { BenchmarkSpike } from './components/BenchmarkSpike';
@@ -14,6 +15,9 @@ export default function App() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgentId, setSelectedAgentId] = useState<string>('analyst');
   const [messages, setMessages] = useState<Message[]>([]);
+
+  // View Navigation
+  const [viewMode, setViewMode] = useState<'chat' | 'workspace'>('chat');
 
   // Streaming & Execution State
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
@@ -177,6 +181,7 @@ export default function App() {
   // Handle switching conversation
   const handleSelectConversation = useCallback(
     (id: string) => {
+      setViewMode('chat');
       setActiveConversationId(id);
       const conv = conversations.find((c) => c.id === id);
       if (conv?.agent_id) {
@@ -200,6 +205,7 @@ export default function App() {
       });
       setConversations((prev) => [newConv, ...prev]);
       setActiveConversationId(newConv.id);
+      setViewMode('chat');
       setMessages([]);
       setIsStreaming(false);
       setStreamingText('');
@@ -326,23 +332,29 @@ export default function App() {
         showBenchmark={showBenchmark}
         onToggleBenchmark={() => setShowBenchmark(true)}
         appVersion={appVersion}
+        viewMode={viewMode}
+        onSelectViewMode={setViewMode}
       />
 
-      {/* Main Chat View */}
-      <ChatView
-        conversationId={activeConversationId || ''}
-        conversationTitle={activeConversation?.title || 'Cuộc trò chuyện'}
-        messages={messages}
-        agent={currentAgent}
-        onSendMessage={handleSendMessage}
-        onCancelRun={handleCancelRun}
-        onSelectModel={handleSelectModel}
-        isStreaming={isStreaming}
-        streamingText={streamingText}
-        activeTools={activeTools}
-        errorMsg={errorMsg}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-      />
+      {/* Main View: Chat or Workspace Reports */}
+      {viewMode === 'workspace' ? (
+        <WorkspaceReportsView onBackToChat={() => setViewMode('chat')} />
+      ) : (
+        <ChatView
+          conversationId={activeConversationId || ''}
+          conversationTitle={activeConversation?.title || 'Cuộc trò chuyện'}
+          messages={messages}
+          agent={currentAgent}
+          onSendMessage={handleSendMessage}
+          onCancelRun={handleCancelRun}
+          onSelectModel={handleSelectModel}
+          isStreaming={isStreaming}
+          streamingText={streamingText}
+          activeTools={activeTools}
+          errorMsg={errorMsg}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+        />
+      )}
 
       {/* Settings Modal (Write-only API Keys) */}
       <SettingsModal

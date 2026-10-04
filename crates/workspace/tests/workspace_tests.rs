@@ -129,3 +129,72 @@ async fn test_list_files_and_reindex() {
     assert_eq!(doc.path, "reports/báo cáo A.md");
     assert!(!doc.content_hash.is_empty());
 }
+
+struct TestSink {
+    tx: tokio::sync::mpsc::Sender<hubbub_domain::entities::document::Document>,
+}
+
+impl hubbub_workspace::WorkspaceWatcherSink for TestSink {
+    fn on_document_indexed(&self, doc: hubbub_domain::entities::document::Document) {
+        let _ = self.tx.try_send(doc);
+    }
+}
+
+#[tokio::test]
+async fn test_watcher_detects_external_file_modification_and_reindexes() {
+    let dir = tempdir().unwrap();
+    let service = std::sync::Arc::new(LocalWorkspaceService::new(dir.path()));
+    let (tx, mut rx) = tokio::sync::mpsc::channel(10);
+    let sink = std::sync::Arc::new(TestSink { tx });
+
+    let watcher = hubbub_workspace::WorkspaceWatcher::start(
+        dir.path(),
+        service.clone(),
+        sink,
+    )
+    .unwrap();
+
+    let reports_dir = dir.path().join("reports");
+    tokio::fs::create_dir_all(&reports_dir).await.unwrap();
+
+    // Simulate external edit (outside LocalWorkspaceService)
+    let file_path = reports_dir.join("external_report.md");
+    tokio::fs::write(&file_path, "# Báo cáo Từ Bên Ngoài\n\nNội dung tự sửa bằng text editor")
+        .await
+        .unwrap();
+
+    let received = tokio::time::timeout(tokio::time::Duration::from_secs(3), rx.recv()).await;
+    assert!(received.is_ok(), "Timed out waiting for watcher event");
+    let doc = received.unwrap().unwrap();
+    assert_eq!(doc.title, "Báo cáo Từ Bên Ngoài");
+    assert_eq!(doc.path, "reports/external_report.md");
+
+    watcher.stop().await;
+}
+
+#[tokio::test]
+async fn test_watcher_ignores_self_writes() {
+    let dir = tempdir().unwrap();
+    let service = std::sync::Arc::new(LocalWorkspaceService::new(dir.path()));
+    let (tx, mut rx) = tokio::sync::mpsc::channel(10);
+    let sink = std::sync::Arc::new(TestSink { tx });
+
+    let watcher = hubbub_workspace::WorkspaceWatcher::start(
+        dir.path(),
+        service.clone(),
+        sink,
+    )
+    .unwrap();
+
+    // App self-write via service.write_file
+    service
+        .write_file("reports/internal_report.md", "# Báo cáo Nội Bộ")
+        .await
+        .unwrap();
+
+    // Watcher should ignore self write because it's recorded in service.self_writes
+    let received = tokio::time::timeout(tokio::time::Duration::from_millis(500), rx.recv()).await;
+    assert!(received.is_err(), "Watcher should ignore self-writes!");
+
+    watcher.stop().await;
+}

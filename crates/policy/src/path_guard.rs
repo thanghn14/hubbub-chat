@@ -30,6 +30,13 @@ impl PathGuard {
             ));
         }
 
+        let lower = trimmed.to_lowercase();
+        if lower.contains("%2e") || lower.contains("%2f") || lower.contains("%5c") {
+            return Err(PolicyError::PathTraversal {
+                path: trimmed.to_string(),
+            });
+        }
+
         let p = Path::new(trimmed);
 
         // Disallow absolute paths and root separators

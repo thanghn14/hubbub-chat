@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, type KeyboardEvent, type ChangeEvent } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import type { Message, Agent, ToolLog } from '../types';
 import {
   Send,
@@ -8,6 +9,7 @@ import {
   CheckCircle2,
   Sparkles,
   AlertTriangle,
+  FileText,
 } from 'lucide-react';
 import { MarkdownContent } from './MarkdownContent';
 import { ModelSelector } from './ModelSelector';
@@ -44,11 +46,35 @@ export const ChatView = ({
 }: ChatViewProps) => {
   const [input, setInput] = useState('');
   const [isComposing, setIsComposing] = useState(false);
+  const [reportToast, setReportToast] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const activeTurnRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const prevIsStreamingRef = useRef(false);
   const prevConvIdRef = useRef(_conversationId);
+
+  const handleSaveAsReport = async (msg: Message) => {
+    const textParts = msg.parts
+      .filter((p) => p.type === 'Text')
+      .map((p) => (typeof p.content === 'string' ? p.content : ''))
+      .join('\n\n');
+    if (!textParts.trim()) return;
+
+    const firstLine = textParts.trim().split('\n')[0].replace(/^#+\s*/, '').slice(0, 40) || 'Báo cáo từ AI';
+    try {
+      await invoke('write_report', {
+        title: firstLine,
+        content: textParts,
+        filename: null,
+      });
+      setReportToast(`Đã lưu "${firstLine}" vào reports/`);
+      setTimeout(() => setReportToast(null), 3000);
+    } catch (err) {
+      console.error('Failed to save report:', err);
+      setReportToast('Lỗi khi lưu: ' + String(err));
+      setTimeout(() => setReportToast(null), 3000);
+    }
+  };
 
   // 1. When switching conversation, scroll to the bottom of the conversation
   useEffect(() => {
@@ -107,7 +133,15 @@ export const ChatView = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-zinc-950 overflow-hidden">
+    <div className="flex-1 flex flex-col h-full bg-zinc-950 overflow-hidden relative">
+      {/* Toast Notification */}
+      {reportToast && (
+        <div className="fixed top-4 right-4 z-50 bg-zinc-900 border border-indigo-500/50 text-indigo-200 text-xs px-3.5 py-2 rounded-lg shadow-xl flex items-center gap-2 animate-fade-in">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{reportToast}</span>
+        </div>
+      )}
+
       {/* Top Header */}
       <header className="h-14 border-b border-zinc-800/80 px-5 flex items-center justify-between shrink-0 bg-zinc-900/40 backdrop-blur-xs select-none">
         <div className="flex items-center gap-3">
@@ -282,6 +316,18 @@ export const ChatView = ({
                           }
                           return null;
                         })}
+
+                        {/* Save as Report Button */}
+                        <div className="mt-2.5 flex items-center gap-2 select-none">
+                          <button
+                            onClick={() => handleSaveAsReport(msg)}
+                            title="Lưu câu trả lời thành Báo cáo trong Workspace reports/"
+                            className="px-2.5 py-1 bg-zinc-900/60 hover:bg-zinc-800 text-[11px] text-zinc-400 hover:text-zinc-200 rounded-md border border-zinc-800/80 flex items-center gap-1.5 transition-colors"
+                          >
+                            <FileText className="w-3 h-3 text-indigo-400" />
+                            Lưu thành Báo cáo
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>

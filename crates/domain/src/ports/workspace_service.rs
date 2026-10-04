@@ -19,4 +19,9 @@ pub trait WorkspaceService: Send + Sync {
 
     /// Re-index a file (update document metadata in store).
     async fn reindex_file(&self, relative_path: &str) -> Result<Option<Document>, DomainError>;
+
+    /// Check if a path was recently written by this service (to avoid re-indexing loops).
+    async fn is_recent_self_write(&self, _path: &std::path::Path) -> bool {
+        false
+    }
 }

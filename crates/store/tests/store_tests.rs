@@ -1,6 +1,7 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use chrono::Utc;
+use hubbub_domain::entities::audit_log::AuditLog;
 use hubbub_domain::entities::conversation::{Conversation, Message, MessagePart, MessageRole};
 use hubbub_domain::entities::document::Document;
 use hubbub_domain::entities::run::{Run, RunStatus, Step, StepKind, StepStatus, UsageInfo};
@@ -581,5 +582,43 @@ async fn test_concurrent_reads_and_writes_wal() {
         .await
         .expect("list messages");
     assert_eq!(messages.len(), 10);
+}
+
+#[tokio::test]
+async fn test_audit_log_record_and_list() {
+    let store = SqliteStore::open_in_memory()
+        .await
+        .expect("Failed to open in-memory store");
+
+    let run_id = Uuid::now_v7();
+    let log1 = AuditLog {
+        id: Uuid::now_v7(),
+        timestamp: Utc::now(),
+        run_id: Some(run_id),
+        tool_name: "workspace_read".to_string(),
+        args_digest: r#"{"path":"reports/summary.md"}"#.to_string(),
+        decision: "allow".to_string(),
+        result_digest: Some("250 bytes read".to_string()),
+    };
+    let log2 = AuditLog {
+        id: Uuid::now_v7(),
+        timestamp: Utc::now(),
+        run_id: Some(run_id),
+        tool_name: "web_fetch".to_string(),
+        args_digest: r#"{"url":"http://169.254.169.254"}"#.to_string(),
+        decision: "deny".to_string(),
+        result_digest: Some("SSRF target blocked".to_string()),
+    };
+
+    store.record_audit_log(&log1).await.expect("record log1");
+    store.record_audit_log(&log2).await.expect("record log2");
+
+    let logs = store.list_audit_logs(10).await.expect("list logs");
+    assert_eq!(logs.len(), 2);
+    // Ordered by timestamp DESC
+    assert_eq!(logs[0].tool_name, "web_fetch");
+    assert_eq!(logs[0].decision, "deny");
+    assert_eq!(logs[1].tool_name, "workspace_read");
+    assert_eq!(logs[1].decision, "allow");
 }
 

@@ -4,6 +4,7 @@ use uuid::Uuid;
 
 use hubbub_app::AppService;
 use hubbub_domain::entities::agent::Agent;
+use hubbub_domain::entities::audit_log::AuditLog;
 use hubbub_domain::entities::conversation::{Conversation, Message};
 use hubbub_domain::entities::document::Document;
 use hubbub_domain::entities::run::Run;
@@ -206,5 +207,31 @@ pub async fn search_documents(
     service: State<'_, Arc<AppService>>,
 ) -> Result<Vec<Document>, String> {
     service.search_documents(&query).await.map_err(|e| e.to_string())
+}
+
+/// Tauri IPC command: write a report into workspace reports/.
+#[tauri::command]
+pub async fn write_report(
+    title: String,
+    content: String,
+    filename: Option<String>,
+    service: State<'_, Arc<AppService>>,
+) -> Result<String, String> {
+    service
+        .write_report(&title, &content, filename.as_deref())
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Tauri IPC command: list audit logs.
+#[tauri::command]
+pub async fn list_audit_logs(
+    limit: Option<u32>,
+    service: State<'_, Arc<AppService>>,
+) -> Result<Vec<AuditLog>, String> {
+    service
+        .list_audit_logs(limit.unwrap_or(50))
+        .await
+        .map_err(|e| e.to_string())
 }
 

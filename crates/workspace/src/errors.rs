@@ -22,6 +22,9 @@ pub enum WorkspaceError {
 
     #[error("Protected path: cannot write to '{0}'")]
     ProtectedPath(String),
+
+    #[error("Watcher error: {0}")]
+    Watcher(String),
 }
 
 impl From<WorkspaceError> for DomainError {
@@ -39,6 +42,7 @@ impl From<WorkspaceError> for DomainError {
             WorkspaceError::InvalidUtf8(path) => DomainError::Validation(format!(
                 "File '{path}' is not valid UTF-8"
             )),
+            WorkspaceError::Watcher(msg) => DomainError::Internal(format!("Watcher error: {msg}")),
             WorkspaceError::Io(e) => DomainError::Internal(format!("I/O error: {e}")),
         }
     }

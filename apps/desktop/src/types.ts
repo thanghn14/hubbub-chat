@@ -86,3 +86,14 @@ export interface WorkspaceDocument {
   updated_at: string;
 }
 
+export interface AuditLog {
+  id: string;
+  timestamp: string;
+  run_id?: string | null;
+  tool_name: string;
+  args_digest: string;
+  decision: string;
+  result_digest?: string | null;
+}
+
+

@@ -11,6 +11,7 @@ use async_trait::async_trait;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
+use hubbub_domain::entities::audit_log::AuditLog;
 use hubbub_domain::entities::conversation::{Conversation, Message};
 use hubbub_domain::entities::document::Document;
 use hubbub_domain::entities::run::{Run, Step};
@@ -147,6 +148,20 @@ impl Store for SqliteStore {
 
     async fn search_documents(&self, query: &str) -> Result<Vec<Document>, DomainError> {
         repositories::document::search(&self.pool, query)
+            .await
+            .map_err(Into::into)
+    }
+
+    // --- Audit Logs ---
+
+    async fn record_audit_log(&self, entry: &AuditLog) -> Result<(), DomainError> {
+        repositories::audit_log::record(&self.pool, entry)
+            .await
+            .map_err(Into::into)
+    }
+
+    async fn list_audit_logs(&self, limit: u32) -> Result<Vec<AuditLog>, DomainError> {
+        repositories::audit_log::list(&self.pool, limit)
             .await
             .map_err(Into::into)
     }

@@ -11,6 +11,7 @@ import {
   Sparkles,
   Code2,
   PenTool,
+  FileText,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -26,6 +27,8 @@ interface SidebarProps {
   showBenchmark: boolean;
   onToggleBenchmark: () => void;
   appVersion: string;
+  viewMode?: 'chat' | 'workspace';
+  onSelectViewMode?: (mode: 'chat' | 'workspace') => void;
 }
 
 export const Sidebar = ({
@@ -41,6 +44,8 @@ export const Sidebar = ({
   showBenchmark,
   onToggleBenchmark,
   appVersion,
+  viewMode = 'chat',
+  onSelectViewMode,
 }: SidebarProps) => {
   const getAgentIcon = (id: string) => {
     switch (id) {
@@ -79,6 +84,32 @@ export const Sidebar = ({
           <span className="text-[10px] bg-zinc-800 text-zinc-400 border border-zinc-700/50 px-2 py-0.5 rounded-full font-mono">
             v{appVersion}
           </span>
+        </div>
+
+        {/* Navigation Tabs: Chat vs Reports */}
+        <div className="p-2 border-b border-zinc-800/60 flex gap-1 bg-zinc-950/40">
+          <button
+            onClick={() => onSelectViewMode?.('chat')}
+            className={`flex-1 py-1 px-2 rounded-md text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
+              viewMode === 'chat'
+                ? 'bg-zinc-800 text-zinc-100 border border-zinc-700/60 shadow-xs'
+                : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span>Trò chuyện</span>
+          </button>
+          <button
+            onClick={() => onSelectViewMode?.('workspace')}
+            className={`flex-1 py-1 px-2 rounded-md text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
+              viewMode === 'workspace'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>Báo cáo</span>
+          </button>
         </div>
 
         {/* New Chat Button */}

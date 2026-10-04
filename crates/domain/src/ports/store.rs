@@ -1,3 +1,4 @@
+use crate::entities::audit_log::AuditLog;
 use crate::entities::conversation::{Conversation, Message};
 use crate::entities::document::Document;
 use crate::entities::run::{Run, Step};
@@ -37,4 +38,9 @@ pub trait Store: Send + Sync {
     async fn list_documents(&self) -> Result<Vec<Document>, DomainError>;
     async fn search_documents(&self, query: &str) -> Result<Vec<Document>, DomainError>;
     async fn search_messages(&self, query: &str) -> Result<Vec<Message>, DomainError>;
+
+    // Audit Logs
+    async fn record_audit_log(&self, entry: &AuditLog) -> Result<(), DomainError>;
+    async fn list_audit_logs(&self, limit: u32) -> Result<Vec<AuditLog>, DomainError>;
 }
+

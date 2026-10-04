@@ -60,8 +60,10 @@ pub fn run() {
             commands::cancel_run,
             commands::list_reports,
             commands::read_report,
+            commands::write_report,
             commands::list_documents,
             commands::search_documents,
+            commands::list_audit_logs,
         ])
         .run(tauri::generate_context!())
         .unwrap_or_else(|e| {

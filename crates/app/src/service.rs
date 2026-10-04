@@ -7,6 +7,7 @@ use uuid::Uuid;
 
 use hubbub_agent::AgentRuntime;
 use hubbub_domain::entities::agent::Agent;
+use hubbub_domain::entities::audit_log::AuditLog;
 use hubbub_domain::entities::conversation::{Conversation, Message};
 use hubbub_domain::entities::document::Document;
 use hubbub_domain::entities::run::Run;
@@ -23,6 +24,7 @@ use hubbub_workspace::LocalWorkspaceService;
 
 use crate::config::AppConfig;
 use crate::errors::AppError;
+use crate::report_service::ReportService;
 use crate::seed::default_agents;
 
 pub struct AppService {
@@ -31,6 +33,7 @@ pub struct AppService {
     vault: Arc<dyn SecretStore>,
     tool_host: Arc<dyn ToolHost>,
     workspace: Arc<dyn WorkspaceService>,
+    reports: Arc<ReportService>,
     agents: Arc<RwLock<HashMap<String, Agent>>>,
     active_cancellations: Arc<Mutex<HashMap<Uuid, CancellationToken>>>,
 }
@@ -58,12 +61,15 @@ impl AppService {
             map.insert(agent.id.clone(), agent);
         }
 
+        let reports = Arc::new(ReportService::new(workspace.clone(), store.clone()));
+
         Self {
             config,
             store,
             vault,
             tool_host,
             workspace,
+            reports,
             agents: Arc::new(RwLock::new(map)),
             active_cancellations: Arc::new(Mutex::new(HashMap::new())),
         }
@@ -71,18 +77,11 @@ impl AppService {
 
     /// Initialize default AppService with SQLite store, Keyring vault, and Workspace service.
     pub async fn init(config: AppConfig) -> Result<Self, AppError> {
+        for sub in &["data", "reports", "notes", "sources", ".versions"] {
+            std::fs::create_dir_all(config.workspace_dir.join(sub))?;
+        }
+
         let data_dir = config.workspace_dir.join("data");
-        let reports_dir = config.workspace_dir.join("reports");
-        let notes_dir = config.workspace_dir.join("notes");
-        let sources_dir = config.workspace_dir.join("sources");
-        let versions_dir = config.workspace_dir.join(".versions");
-
-        std::fs::create_dir_all(&data_dir)?;
-        std::fs::create_dir_all(&reports_dir)?;
-        std::fs::create_dir_all(&notes_dir)?;
-        std::fs::create_dir_all(&sources_dir)?;
-        std::fs::create_dir_all(&versions_dir)?;
-
         let db_path = data_dir.join("hubbub.db");
         let db_str = db_path.to_string_lossy().to_string();
         let store = Arc::new(SqliteStore::open(&db_str).await?);
@@ -90,6 +89,7 @@ impl AppService {
 
         let workspace = Arc::new(LocalWorkspaceService::new(&config.workspace_dir));
         let tool_host = Arc::new(BuiltinToolHost::with_workspace(workspace.clone(), Some(store.clone())));
+        let reports = Arc::new(ReportService::new(workspace.clone(), store.clone()));
 
         let agents_path = data_dir.join("agents.json");
         let mut map = HashMap::new();
@@ -117,6 +117,7 @@ impl AppService {
             vault,
             tool_host,
             workspace,
+            reports,
             agents: Arc::new(RwLock::new(map)),
             active_cancellations: Arc::new(Mutex::new(HashMap::new())),
         })
@@ -355,29 +356,32 @@ impl AppService {
     }
 
     pub async fn list_reports(&self) -> Result<Vec<String>, AppError> {
-        let files = self.workspace.list_files("reports").await?;
-        let reports = files.into_iter().filter(|f| f.ends_with(".md")).collect();
-        Ok(reports)
+        self.reports.list_reports().await
     }
 
     pub async fn read_report(&self, filename: &str) -> Result<String, AppError> {
-        let clean = if filename.starts_with("reports/") || filename.starts_with("reports\\") {
-            filename.to_string()
-        } else {
-            format!("reports/{filename}")
-        };
-        let content = self.workspace.read_file(&clean).await?;
-        Ok(content)
+        self.reports.read_report(filename).await
+    }
+
+    pub async fn write_report(
+        &self,
+        title: &str,
+        content: &str,
+        filename: Option<&str>,
+    ) -> Result<String, AppError> {
+        self.reports.write_report(title, content, filename).await
     }
 
     pub async fn list_documents(&self) -> Result<Vec<Document>, AppError> {
-        let docs = self.store.list_documents().await?;
-        Ok(docs)
+        self.reports.list_documents().await
     }
 
     pub async fn search_documents(&self, query: &str) -> Result<Vec<Document>, AppError> {
-        let docs = self.store.search_documents(query).await?;
-        Ok(docs)
+        self.reports.search_documents(query).await
+    }
+
+    pub async fn list_audit_logs(&self, limit: u32) -> Result<Vec<AuditLog>, AppError> {
+        self.reports.list_audit_logs(limit).await
     }
 }
 

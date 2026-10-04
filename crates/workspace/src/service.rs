@@ -1,10 +1,14 @@
 //! Local filesystem implementation of WorkspaceService.
 
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 use async_trait::async_trait;
 use chrono::Utc;
 use sha2::{Digest, Sha256};
 use tokio::io::AsyncWriteExt;
+use tokio::sync::RwLock;
 use uuid::Uuid;
 
 use hubbub_domain::entities::document::Document;
@@ -21,6 +25,7 @@ const MAX_VERSIONS_PER_FILE: usize = 20;
 pub struct LocalWorkspaceService {
     root: PathBuf,
     max_file_size: u64,
+    self_writes: Arc<RwLock<HashMap<PathBuf, Instant>>>,
 }
 
 impl LocalWorkspaceService {
@@ -28,6 +33,7 @@ impl LocalWorkspaceService {
         Self {
             root: root.as_ref().to_path_buf(),
             max_file_size: DEFAULT_MAX_FILE_SIZE,
+            self_writes: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -35,7 +41,20 @@ impl LocalWorkspaceService {
         Self {
             root: root.as_ref().to_path_buf(),
             max_file_size,
+            self_writes: Arc::new(RwLock::new(HashMap::new())),
         }
+    }
+
+    pub async fn record_self_write(&self, path: &Path) {
+        let mut map = self.self_writes.write().await;
+        map.insert(path.to_path_buf(), Instant::now());
+    }
+
+    pub async fn is_recent_self_write(&self, path: &Path) -> bool {
+        let mut map = self.self_writes.write().await;
+        let now = Instant::now();
+        map.retain(|_, time| now.duration_since(*time) < Duration::from_secs(3));
+        map.contains_key(path)
     }
 
     /// Backup previous version of a file into .versions/ before overwriting.
@@ -140,6 +159,8 @@ impl WorkspaceService for LocalWorkspaceService {
             let _ = tokio::fs::remove_file(&temp_path).await;
             return Err(WorkspaceError::Io(e).into());
         }
+
+        self.record_self_write(&target).await;
 
         Ok(())
     }
@@ -247,5 +268,12 @@ impl WorkspaceService for LocalWorkspaceService {
             created_at: now,
             updated_at: now,
         }))
+    }
+
+    async fn is_recent_self_write(&self, path: &Path) -> bool {
+        let mut map = self.self_writes.write().await;
+        let now = Instant::now();
+        map.retain(|_, time| now.duration_since(*time) < Duration::from_secs(3));
+        map.contains_key(path)
     }
 }

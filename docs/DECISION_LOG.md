@@ -5,6 +5,49 @@ Sắp xếp theo thứ tự thời gian (mới nhất ở trên).
 
 > **QUY TẮC:** PR/commit có thay đổi quan trọng mà KHÔNG cập nhật file này sẽ bị reject.
 
+## [2026-10-04] Triển khai Sprint 2.4: Audit Logs, Workspace Watcher & Re-indexing, Security Battery, và Giao diện Báo cáo Workspace
+
+**Bối cảnh:**
+Theo kế hoạch phát triển Phase 2 (`MASTER_PLAN.md`), Sprint 2.4 hoàn thiện các mảnh ghép còn lại của hệ sinh thái Workspace và bảo mật Zero-Trust:
+1. Ghi nhật ký kiểm toán (Audit Log) toàn diện cho mọi lượt gọi công cụ của tác tử (cả cho phép và từ chối).
+2. Lắng nghe thay đổi tệp tin Workspace (`WorkspaceWatcher`) tự động lập lại chỉ mục FTS5 khi tệp được sửa từ bên ngoài (hoặc bên trong app), có cơ chế debounce và self-write ignore.
+3. Bộ kiểm thử bảo mật nâng cao (Security Battery Tests): Prompt Injection resistance, Path Traversal comprehensive battery, và SSRF comprehensive battery.
+4. Giao diện Desktop hoàn chỉnh cho Workspace: Quản lý & tìm kiếm báo cáo/tài liệu (FTS5 search), trình soạn thảo WYSIWYG Milkdown & xem Markdown, nút "Lưu thành Báo cáo" từ hội thoại, và bảng xem nhật ký kiểm toán bảo mật.
+
+**Quyết định & Giải pháp Triển khai:**
+1. **Thực thể & Kho lưu trữ AuditLog (`crates/domain`, `crates/store`):**
+   - Bổ sung thực thể `AuditLog` và các ports `record_audit_log`, `list_audit_logs`.
+   - Triển khai `AuditLogRepository` truy vấn bảng `audit_logs` có sẵn trong SQLite.
+   - Tích hợp ghi log trong `ToolRunner`: mọi lần thực thi công cụ đều được ghi nhận quyết định `allow` hoặc `deny`, mã băm tham số và kết quả.
+2. **Bộ Lắng nghe Tệp tin Workspace (`crates/workspace` - `WorkspaceWatcher`):**
+   - Triển khai `WorkspaceWatcher` sử dụng `notify::RecommendedWatcher` kết hợp `tokio::sync::mpsc`.
+   - Bộ lọc watchable path thông minh: bỏ qua các tệp ẩn (`.tmp_*`, `.git`), tệp trong `.versions/`, chỉ lập chỉ mục tệp tài liệu (`.md`, `.txt`).
+   - Cơ chế Debouncing 200ms bằng `Instant` deadline map tránh trùng lặp sự kiện OS.
+   - Cơ chế "Self-write Ignore": theo dõi `self_writes` trong `LocalWorkspaceService` để loại trừ các sự kiện sinh ra bởi chính ứng dụng.
+   - Gắn kết tự động vào `ReportService` và `AppService::init`, đồng bộ chỉ mục FTS5 tức thời.
+3. **Bộ Kiểm thử Bảo mật Nâng cao (`crates/agent/tests/security_battery_tests.rs`):**
+   - `test_prompt_injection_simulation_blocked_and_audited`: Giả lập LLM bị nhiễm prompt injection cố gắng đọc tệp nhạy cảm hệ điều hành và gửi request SSRF tới cloud metadata. Policy engine chặn đứng cả hai, ghi nhận 2 bản ghi `decision: "deny"` trong audit logs.
+   - `test_path_traversal_battery_all_variants_rejected`: Kiểm thử toàn diện 20+ biến thể path traversal (`../`, Windows UNC `\\server\share`, ADS `::$DATA`, URL-encoded `%2e%2e`, `%2f`, `%5c`, protected system files). Nâng cấp `PathGuard` để chặn đứng các vector mã hóa URL.
+   - `test_ssrf_battery_all_private_targets_rejected`: Kiểm thử toàn diện 25+ mục tiêu SSRF (IPv4 loopback, Private Class A/B/C, AWS/GCP cloud metadata `169.254.169.254`, IPv6 loopback `[::1]`, Unique Local `[fc00::]`, non-HTTP schemes).
+4. **Giao diện Desktop Workspace & Báo cáo (`apps/desktop`):**
+   - Tạo component `WorkspaceReportsView`:
+     - Thanh tìm kiếm toàn văn FTS5 siêu tốc kết nối với backend SQLite.
+     - Danh sách tài liệu với dung lượng, ngày cập nhật.
+     - Tích hợp trình soạn thảo WYSIWYG `MilkdownEditor` và chế độ xem trước `MarkdownContent`.
+     - Phân hệ xem Nhật ký kiểm toán bảo mật với bộ lọc Tất cả / Cho phép / Từ chối.
+   - Cập nhật `ChatView`: Bổ sung nút "Lưu thành Báo cáo" trên mọi câu trả lời của AI, kèm toast thông báo tức thời.
+   - Cập nhật `Sidebar`: Thanh chuyển đổi điều hướng linh hoạt giữa "Trò chuyện" và "Kho Báo cáo".
+5. **Kỷ luật Mã nguồn & Đảm bảo Chất lượng:**
+   - Files < 400 dòng, functions < 60 dòng.
+   - 0 `unwrap()`, 0 `expect()`, 0 `panic!` trong mã nguồn production.
+   - 100% tests PASS (`cargo test --workspace`).
+   - 0 warnings trên `cargo clippy --workspace --all-targets -- -D warnings`.
+   - `pnpm build` biên dịch sạch sẽ 100%.
+
+**Trạng thái:** Đã áp dụng
+
+---
+
 ## [2026-10-03] Triển khai Sprint 2.3: Local Filesystem Tools (`hubbub-tools`) & Workspace Service (`hubbub-workspace`)
 
 **Bối cảnh:**
