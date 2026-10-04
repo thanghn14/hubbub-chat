@@ -622,3 +622,72 @@ async fn test_audit_log_record_and_list() {
     assert_eq!(logs[1].decision, "allow");
 }
 
+#[tokio::test]
+async fn test_model_usage_stats_aggregation() {
+    let store = SqliteStore::open_in_memory()
+        .await
+        .expect("Failed to open in-memory store");
+
+    let conv_id = Uuid::now_v7();
+    let run_id = Uuid::now_v7();
+    let now = Utc::now();
+
+    let conv = Conversation {
+        id: conv_id,
+        title: "Test Quota".to_string(),
+        agent_id: "analyst".to_string(),
+        created_at: now,
+        updated_at: now,
+        archived: false,
+    };
+    store.create_conversation(&conv).await.expect("create conv");
+
+    let run = Run {
+        id: run_id,
+        conversation_id: conv_id,
+        agent_id: "analyst".to_string(),
+        parent_run_id: None,
+        status: RunStatus::Completed,
+        usage: Some(UsageInfo {
+            prompt_tokens: 150,
+            completion_tokens: 50,
+            total_tokens: 200,
+        }),
+        cost_usd: Some(0.002),
+        started_at: now,
+        finished_at: Some(now),
+    };
+    store.create_run(&run).await.expect("create run");
+
+    let step = Step {
+        id: Uuid::now_v7(),
+        run_id,
+        idx: 1,
+        kind: StepKind::Llm,
+        input: serde_json::json!({
+            "model": "gemini-3.8-flash",
+            "messages_count": 2,
+        }),
+        output: None,
+        status: StepStatus::Completed,
+        duration_ms: Some(120),
+        created_at: now,
+    };
+    store.create_step(&step).await.expect("create step");
+
+    let stats = store.get_model_usage_stats().await.expect("get stats");
+    assert!(!stats.is_empty());
+
+    let gemini_stat = stats.iter().find(|s| s.model == "gemini-3.8-flash");
+    assert!(gemini_stat.is_some());
+    let stat = gemini_stat.unwrap();
+    assert_eq!(stat.total_tokens, 200);
+    assert_eq!(stat.total_runs, 1);
+    assert_eq!(stat.requests_today, 1);
+    assert_eq!(stat.tokens_today, 200);
+    assert_eq!(stat.rpm_limit, 15);
+    assert_eq!(stat.rpd_limit, 1500);
+    assert!(stat.is_free_tier);
+}
+
+

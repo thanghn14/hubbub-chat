@@ -96,4 +96,38 @@ export interface AuditLog {
   result_digest?: string | null;
 }
 
+export interface ModelUsageStat {
+  model: string;
+  provider: string;
+  total_prompt_tokens: number;
+  total_completion_tokens: number;
+  total_tokens: number;
+  total_runs: number;
+  total_cost_usd: number;
+  requests_today: number;
+  tokens_today: number;
+  rpm_limit: number;
+  rpd_limit: number;
+  is_free_tier: boolean;
+  last_used_at?: string | null;
+}
+
+export interface ToolStep {
+  id: string;
+  toolName: string;
+  args?: unknown;
+  result?: string;
+  status: 'running' | 'completed' | 'failed';
+}
+
+export interface ChatTurn {
+  id: string;
+  userMessage?: Message;
+  assistantMessages: Message[];
+  toolSteps: ToolStep[];
+  finalText: string;
+  createdAt: string;
+  runId?: string | null;
+}
+
 

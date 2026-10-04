@@ -64,6 +64,7 @@ pub fn run() {
             commands::list_documents,
             commands::search_documents,
             commands::list_audit_logs,
+            commands::get_model_usage_stats,
         ])
         .run(tauri::generate_context!())
         .unwrap_or_else(|e| {

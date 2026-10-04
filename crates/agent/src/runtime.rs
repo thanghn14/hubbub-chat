@@ -54,9 +54,28 @@ impl AgentRuntime {
         user_prompt: Option<&str>,
         cancellation_token: CancellationToken,
     ) -> Result<Run, AgentError> {
+        self.execute_run_with_id(
+            conversation_id,
+            agent,
+            user_prompt,
+            cancellation_token,
+            None,
+        )
+        .await
+    }
+
+    /// Execute an agent run with an optional pre-determined run_id (useful for cancellation tracking).
+    pub async fn execute_run_with_id(
+        &self,
+        conversation_id: Uuid,
+        agent: &Agent,
+        user_prompt: Option<&str>,
+        cancellation_token: CancellationToken,
+        run_id: Option<Uuid>,
+    ) -> Result<Run, AgentError> {
         self.prepare_conversation(conversation_id, agent, user_prompt)
             .await?;
-        let mut run = self.init_run(conversation_id, agent).await?;
+        let mut run = self.init_run(conversation_id, agent, run_id).await?;
 
         let history = self.store.list_messages(conversation_id, 1000, 0).await?;
         let mut working_messages = ContextBuilder::build(agent, &history, None);
@@ -160,9 +179,14 @@ impl AgentRuntime {
         Ok(())
     }
 
-    async fn init_run(&self, conversation_id: Uuid, agent: &Agent) -> Result<Run, AgentError> {
+    async fn init_run(
+        &self,
+        conversation_id: Uuid,
+        agent: &Agent,
+        run_id: Option<Uuid>,
+    ) -> Result<Run, AgentError> {
         let run = Run {
-            id: Uuid::now_v7(),
+            id: run_id.unwrap_or_else(Uuid::now_v7),
             conversation_id,
             agent_id: agent.id.clone(),
             parent_run_id: None,

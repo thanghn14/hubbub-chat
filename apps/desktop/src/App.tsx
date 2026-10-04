@@ -1,13 +1,18 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { listen, type UnlistenFn } from '@tauri-apps/api/event';
+import { ActivityDock, type MainNavView } from './components/ActivityDock';
 import { Sidebar } from './components/Sidebar';
 import { ChatView } from './components/ChatView';
+import { AgentsHubView } from './components/AgentsHubView';
 import { WorkspaceReportsView } from './components/WorkspaceReportsView';
+import { AgentSkillsDrawer } from './components/AgentSkillsDrawer';
+import { ModelQuotaModal } from './components/ModelQuotaModal';
 import { SettingsModal } from './components/SettingsModal';
 import { AgentModal } from './components/AgentModal';
 import { BenchmarkSpike } from './components/BenchmarkSpike';
-import type { Conversation, Message, Agent, Run, RunEvent, ToolLog } from './types';
+import { useRunEvents } from './hooks/useRunEvents';
+import { useAppInit } from './hooks/useAppInit';
+import type { Conversation, Message, Agent, Run, ToolLog } from './types';
 
 export default function App() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -16,8 +21,8 @@ export default function App() {
   const [selectedAgentId, setSelectedAgentId] = useState<string>('analyst');
   const [messages, setMessages] = useState<Message[]>([]);
 
-  // View Navigation
-  const [viewMode, setViewMode] = useState<'chat' | 'workspace'>('chat');
+  // Navigation View State
+  const [activeNavView, setActiveNavView] = useState<MainNavView>('chat');
 
   // Streaming & Execution State
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
@@ -25,14 +30,17 @@ export default function App() {
   const [activeTools, setActiveTools] = useState<ToolLog[]>([]);
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const isSendingRef = useRef(false);
 
   // Modals & Panels
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [isQuotaModalOpen, setIsQuotaModalOpen] = useState<boolean>(false);
   const [isAgentModalOpen, setIsAgentModalOpen] = useState<boolean>(false);
+  const [isAgentDrawerOpen, setIsAgentDrawerOpen] = useState<boolean>(false);
+  const [drawerAgent, setDrawerAgent] = useState<Agent | null>(null);
   const [showBenchmark, setShowBenchmark] = useState<boolean>(false);
   const [appVersion, setAppVersion] = useState<string>('0.1.0');
 
-  // Keep a ref to activeConversationId for async Tauri event handlers
   const activeConversationIdRef = useRef<string | null>(null);
   useEffect(() => {
     activeConversationIdRef.current = activeConversationId;
@@ -52,142 +60,81 @@ export default function App() {
     }
   }, []);
 
-  // Initialize data on mount & subscribe to Tauri events
-  useEffect(() => {
-    let isMounted = true;
-    let unlistenRunEvent: UnlistenFn | null = null;
+  // Initialize data on mount via custom hook
+  useAppInit({
+    setAppVersion,
+    setAgents,
+    setSelectedAgentId,
+    setConversations,
+    setActiveConversationId,
+    loadMessages,
+  });
 
-    async function init() {
-      try {
-        const ver = await invoke<string>('get_version');
-        if (isMounted) setAppVersion(ver);
-      } catch {
-        // Fallback for browser preview
-      }
-
-      // 1. Fetch available agents
-      let loadedAgents: Agent[] = [];
-      try {
-        loadedAgents = await invoke<Agent[]>('list_agents');
-        if (isMounted && loadedAgents.length > 0) {
-          setAgents(loadedAgents);
-          setSelectedAgentId(loadedAgents[0].id);
-        }
-      } catch (err) {
-        console.error('Failed to list agents:', err);
-      }
-
-      // 2. Fetch conversations or seed initial conversation
-      try {
-        let convs = await invoke<Conversation[]>('list_conversations');
-        if (convs.length === 0) {
-          const defaultAgent = loadedAgents[0]?.id || 'researcher';
-          const newConv = await invoke<Conversation>('create_conversation', {
-            title: 'Cuộc trò chuyện mới',
-            agentId: defaultAgent,
-          });
-          convs = [newConv];
-        }
-
-        if (isMounted) {
-          setConversations(convs);
-          if (convs[0]) {
-            setActiveConversationId(convs[0].id);
-            if (convs[0].agent_id) {
-              setSelectedAgentId(convs[0].agent_id);
-            }
-            loadMessages(convs[0].id);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to load conversations:', err);
-      }
-
-      // 3. Listen for Tauri run_event streaming events
-      try {
-        unlistenRunEvent = await listen<RunEvent>('run_event', (event) => {
-          const payload = event.payload;
-          if (!payload) return;
-
-          switch (payload.type) {
-            case 'MessageDelta':
-              setStreamingText((prev) => prev + payload.data.content);
-              break;
-
-            case 'ToolStarted':
-              setActiveTools((prev) => [
-                ...prev,
-                {
-                  id: `${payload.data.tool_name}-${Date.now()}`,
-                  name: payload.data.tool_name,
-                  preview: payload.data.args_preview,
-                  status: 'running',
-                },
-              ]);
-              break;
-
-            case 'ToolFinished':
-              setActiveTools((prev) =>
-                prev.map((tool) =>
-                  tool.name === payload.data.tool_name && tool.status === 'running'
-                    ? {
-                        ...tool,
-                        status: payload.data.success ? 'completed' : 'failed',
-                        summary: payload.data.summary,
-                      }
-                    : tool
-                )
-              );
-              break;
-
-            case 'RunFinished':
-              if (activeConversationIdRef.current) {
-                loadMessages(activeConversationIdRef.current).finally(() => {
-                  setIsStreaming(false);
-                  setActiveRunId(null);
-                  setStreamingText('');
-                  setActiveTools([]);
-                });
-              } else {
-                setIsStreaming(false);
-                setActiveRunId(null);
-                setStreamingText('');
-                setActiveTools([]);
+  // Listen for Tauri streaming run events via custom hook
+  useRunEvents({
+    onMessageDelta: useCallback((delta: string) => {
+      setStreamingText((prev) => prev + delta);
+    }, []),
+    onToolStarted: useCallback((toolName: string, argsPreview: string) => {
+      setActiveTools((prev) => [
+        ...prev,
+        {
+          id: `${toolName}-${Date.now()}`,
+          name: toolName,
+          preview: argsPreview,
+          status: 'running',
+        },
+      ]);
+    }, []),
+    onToolFinished: useCallback((toolName: string, success: boolean, summary: string) => {
+      setActiveTools((prev) =>
+        prev.map((tool) =>
+          tool.name === toolName && tool.status === 'running'
+            ? {
+                ...tool,
+                status: success ? 'completed' : 'failed',
+                summary,
               }
-              break;
-
-            case 'Error':
-              setErrorMsg(payload.data.message);
-              setIsStreaming(false);
-              setActiveRunId(null);
-              break;
-          }
+            : tool
+        )
+      );
+    }, []),
+    onRunFinished: useCallback(() => {
+      if (activeConversationIdRef.current) {
+        loadMessages(activeConversationIdRef.current).finally(() => {
+          setIsStreaming(false);
+          isSendingRef.current = false;
+          setActiveRunId(null);
+          setStreamingText('');
+          setActiveTools([]);
         });
-      } catch (err) {
-        console.warn('Tauri event listener registration failed (browser mode?):', err);
+      } else {
+        setIsStreaming(false);
+        isSendingRef.current = false;
+        setActiveRunId(null);
+        setStreamingText('');
+        setActiveTools([]);
       }
-    }
-
-    init();
-
-    return () => {
-      isMounted = false;
-      if (unlistenRunEvent) {
-        unlistenRunEvent();
-      }
-    };
-  }, [loadMessages]);
+    }, [loadMessages]),
+    onError: useCallback((message: string) => {
+      setErrorMsg(message);
+      setIsStreaming(false);
+      isSendingRef.current = false;
+      setActiveRunId(null);
+    }, []),
+  });
 
   // Handle switching conversation
   const handleSelectConversation = useCallback(
     (id: string) => {
-      setViewMode('chat');
+      setActiveNavView('chat');
       setActiveConversationId(id);
       const conv = conversations.find((c) => c.id === id);
       if (conv?.agent_id) {
         setSelectedAgentId(conv.agent_id);
       }
       setIsStreaming(false);
+      isSendingRef.current = false;
       setStreamingText('');
       setActiveTools([]);
       setErrorMsg(null);
@@ -205,9 +152,10 @@ export default function App() {
       });
       setConversations((prev) => [newConv, ...prev]);
       setActiveConversationId(newConv.id);
-      setViewMode('chat');
+      setActiveNavView('chat');
       setMessages([]);
       setIsStreaming(false);
+      isSendingRef.current = false;
       setStreamingText('');
       setActiveTools([]);
       setErrorMsg(null);
@@ -216,17 +164,17 @@ export default function App() {
     }
   }, [selectedAgentId]);
 
-  // Handle sending a message
+  // Handle sending a message with strict in-flight send lock
   const handleSendMessage = useCallback(
     async (prompt: string) => {
-      if (!activeConversationId) return;
+      if (!activeConversationId || isSendingRef.current || isStreaming) return;
+      isSendingRef.current = true;
 
       setErrorMsg(null);
       setIsStreaming(true);
       setStreamingText('');
       setActiveTools([]);
 
-      // Optimistically add user message to the UI
       const optimisticMsg: Message = {
         id: `temp-${Date.now()}`,
         conversation_id: activeConversationId,
@@ -248,9 +196,11 @@ export default function App() {
         setIsStreaming(false);
         setActiveRunId(null);
         setErrorMsg(String(err));
+      } finally {
+        isSendingRef.current = false;
       }
     },
-    [activeConversationId, selectedAgentId]
+    [activeConversationId, selectedAgentId, isStreaming]
   );
 
   // Handle cancelling a run
@@ -262,6 +212,7 @@ export default function App() {
       console.error('Failed to cancel run:', err);
     } finally {
       setIsStreaming(false);
+      isSendingRef.current = false;
       setActiveRunId(null);
     }
   }, [activeRunId]);
@@ -276,7 +227,6 @@ export default function App() {
           prev.map((a) => (a.id === selectedAgentId ? { ...a, model } : a))
         );
       } catch (err) {
-        console.error('Failed to set agent model:', err);
         alert(`Lỗi khi đổi model cho agent: ${String(err)}`);
       }
     },
@@ -303,66 +253,115 @@ export default function App() {
     }
   }, []);
 
-  // Get active conversation and agent
+  const handleSelectNavView = (view: MainNavView) => {
+    if (view === 'quota') {
+      setIsQuotaModalOpen(true);
+      return;
+    }
+    setActiveNavView(view);
+  };
+
   const activeConversation = conversations.find((c) => c.id === activeConversationId);
   const currentAgent = agents.find((a) => a.id === selectedAgentId) || agents[0] || null;
 
-  // Gate 0 Benchmark view toggle
   if (showBenchmark) {
     return (
-      <div className="flex h-screen w-screen bg-zinc-950 text-zinc-100 font-sans select-none overflow-hidden">
+      <div className="flex h-screen w-screen bg-[#08090d] text-zinc-100 font-sans select-none overflow-hidden">
         <BenchmarkSpike onBackToChat={() => setShowBenchmark(false)} />
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen w-screen bg-zinc-950 text-zinc-100 font-sans select-none overflow-hidden">
-      {/* Left Sidebar */}
-      <Sidebar
-        conversations={conversations}
-        activeId={activeConversationId}
-        onSelectConversation={handleSelectConversation}
-        onNewConversation={handleNewConversation}
-        agents={agents}
-        selectedAgentId={selectedAgentId}
-        onSelectAgent={(agentId: string) => setSelectedAgentId(agentId)}
+    <div className="flex h-screen w-screen bg-[#08090d] text-zinc-100 font-sans select-none overflow-hidden">
+      {/* 1. Leftmost Activity Dock (56px) */}
+      <ActivityDock
+        activeView={activeNavView}
+        onSelectView={handleSelectNavView}
         onOpenSettings={() => setIsSettingsOpen(true)}
-        onOpenCreateAgent={() => setIsAgentModalOpen(true)}
+        onOpenBenchmark={() => setShowBenchmark(true)}
         showBenchmark={showBenchmark}
-        onToggleBenchmark={() => setShowBenchmark(true)}
         appVersion={appVersion}
-        viewMode={viewMode}
-        onSelectViewMode={setViewMode}
       />
 
-      {/* Main View: Chat or Workspace Reports */}
-      {viewMode === 'workspace' ? (
-        <WorkspaceReportsView onBackToChat={() => setViewMode('chat')} />
-      ) : (
-        <ChatView
-          conversationId={activeConversationId || ''}
-          conversationTitle={activeConversation?.title || 'Cuộc trò chuyện'}
-          messages={messages}
-          agent={currentAgent}
-          onSendMessage={handleSendMessage}
-          onCancelRun={handleCancelRun}
-          onSelectModel={handleSelectModel}
-          isStreaming={isStreaming}
-          streamingText={streamingText}
-          activeTools={activeTools}
-          errorMsg={errorMsg}
-          onOpenSettings={() => setIsSettingsOpen(true)}
+      {/* 2. Secondary Sidebar (260px) - Visible in Chat view */}
+      {activeNavView === 'chat' && (
+        <Sidebar
+          conversations={conversations}
+          activeId={activeConversationId}
+          onSelectConversation={handleSelectConversation}
+          onNewConversation={handleNewConversation}
+          agents={agents}
+          selectedAgentId={selectedAgentId}
+          onSelectAgent={(agentId: string) => setSelectedAgentId(agentId)}
         />
       )}
 
-      {/* Settings Modal (Write-only API Keys) */}
+      {/* 3. Main Workspace Area */}
+      <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-[#08090d]">
+        {activeNavView === 'chat' && (
+          <ChatView
+            conversationId={activeConversationId || ''}
+            conversationTitle={activeConversation?.title || 'Cuộc trò chuyện'}
+            messages={messages}
+            agent={currentAgent}
+            onSendMessage={handleSendMessage}
+            onCancelRun={handleCancelRun}
+            onSelectModel={handleSelectModel}
+            isStreaming={isStreaming}
+            streamingText={streamingText}
+            activeTools={activeTools}
+            errorMsg={errorMsg}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+            onOpenAgentDrawer={() => {
+              setDrawerAgent(currentAgent);
+              setIsAgentDrawerOpen(true);
+            }}
+            onOpenQuotaModal={() => setIsQuotaModalOpen(true)}
+          />
+        )}
+
+        {activeNavView === 'agents' && (
+          <AgentsHubView
+            agents={agents}
+            onSelectAgentForChat={(agentId) => {
+              setSelectedAgentId(agentId);
+              setActiveNavView('chat');
+            }}
+            onOpenAgentDrawer={(agent) => {
+              setDrawerAgent(agent);
+              setIsAgentDrawerOpen(true);
+            }}
+            onOpenCreateAgent={() => setIsAgentModalOpen(true)}
+          />
+        )}
+
+        {activeNavView === 'workspace' && (
+          <WorkspaceReportsView onBackToChat={() => setActiveNavView('chat')} />
+        )}
+      </main>
+
+      {/* Slide-over Agent & Skills Inspector Drawer */}
+      <AgentSkillsDrawer
+        isOpen={isAgentDrawerOpen}
+        onClose={() => setIsAgentDrawerOpen(false)}
+        agent={drawerAgent || currentAgent}
+        onSaveAgent={handleSaveAgent}
+      />
+
+      {/* Model Quota & Usage Manager Modal */}
+      <ModelQuotaModal
+        isOpen={isQuotaModalOpen}
+        onClose={() => setIsQuotaModalOpen(false)}
+      />
+
+      {/* Settings Modal (API Keys Vault) */}
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
       />
 
-      {/* Agent Modal (Create & Configure Functional Agents) */}
+      {/* Create Agent Modal */}
       <AgentModal
         isOpen={isAgentModalOpen}
         onClose={() => setIsAgentModalOpen(false)}

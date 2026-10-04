@@ -1,19 +1,20 @@
-import { useState, useRef, useEffect, type KeyboardEvent, type ChangeEvent } from 'react';
+import { useState, useRef, useEffect, useMemo, type KeyboardEvent, type ChangeEvent } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import type { Message, Agent, ToolLog } from '../types';
+import type { Message, Agent, ToolLog, ToolStep, ChatTurn } from '../types';
 import {
   Send,
   Square,
   Bot,
-  Wrench,
-  CheckCircle2,
   Sparkles,
   AlertTriangle,
-  FileText,
+  CheckCircle2,
+  Sliders,
+  Gauge,
+  Trash2,
 } from 'lucide-react';
-import { MarkdownContent } from './MarkdownContent';
 import { ModelSelector } from './ModelSelector';
-import { ActiveToolsList } from './ActiveToolsList';
+import { ChatTurnItem } from './ChatTurnItem';
+import { groupMessagesIntoTurns } from '../utils/turnGrouper';
 
 interface ChatViewProps {
   conversationId: string;
@@ -28,6 +29,8 @@ interface ChatViewProps {
   activeTools: ToolLog[];
   errorMsg: string | null;
   onOpenSettings: () => void;
+  onOpenAgentDrawer: () => void;
+  onOpenQuotaModal: () => void;
 }
 
 export const ChatView = ({
@@ -43,6 +46,8 @@ export const ChatView = ({
   activeTools,
   errorMsg,
   onOpenSettings,
+  onOpenAgentDrawer,
+  onOpenQuotaModal,
 }: ChatViewProps) => {
   const [input, setInput] = useState('');
   const [isComposing, setIsComposing] = useState(false);
@@ -50,70 +55,52 @@ export const ChatView = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const activeTurnRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const prevIsStreamingRef = useRef(false);
-  const prevConvIdRef = useRef(_conversationId);
+  const isSendingLocalRef = useRef(false);
 
-  const handleSaveAsReport = async (msg: Message) => {
-    const textParts = msg.parts
-      .filter((p) => p.type === 'Text')
-      .map((p) => (typeof p.content === 'string' ? p.content : ''))
-      .join('\n\n');
-    if (!textParts.trim()) return;
+  // Group database messages into consolidated conversational turns
+  const completedTurns = useMemo(() => {
+    return groupMessagesIntoTurns(messages);
+  }, [messages]);
 
-    const firstLine = textParts.trim().split('\n')[0].replace(/^#+\s*/, '').slice(0, 40) || 'Báo cáo từ AI';
+  // Handle saving text to reports/
+  const handleSaveAsReport = async (text: string) => {
+    if (!text.trim()) return;
+    const firstLine = text.trim().split('\n')[0].replace(/^#+\s*/, '').slice(0, 40) || 'Báo cáo từ AI';
     try {
       await invoke('write_report', {
         title: firstLine,
-        content: textParts,
+        content: text,
         filename: null,
       });
       setReportToast(`Đã lưu "${firstLine}" vào reports/`);
       setTimeout(() => setReportToast(null), 3000);
     } catch (err) {
-      console.error('Failed to save report:', err);
       setReportToast('Lỗi khi lưu: ' + String(err));
       setTimeout(() => setReportToast(null), 3000);
     }
   };
 
-  // 1. When switching conversation, scroll to the bottom of the conversation
+  // Scroll to bottom on conversation switch
   useEffect(() => {
-    if (prevConvIdRef.current !== _conversationId) {
-      prevConvIdRef.current = _conversationId;
-      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-    }
-  }, [_conversationId, messages]);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+  }, [_conversationId]);
 
-  // 2. When a run starts (streaming begins), scroll to bring the prompt/start of response into view.
-  // CRITICAL: We do NOT scroll during token generation (streamingText updates), keeping the viewport
-  // stationary at the top of the answer, exactly like Google Gemini.
-  useEffect(() => {
-    if (isStreaming && !prevIsStreamingRef.current) {
-      activeTurnRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-    prevIsStreamingRef.current = isStreaming;
-  }, [isStreaming]);
-
+  // Focus textarea when conversation changes
   useEffect(() => {
     textareaRef.current?.focus();
   }, [conversationTitle]);
 
-  const cleanError = (err: string) => {
-    let s = err;
-    s = s.replace(/^(Agent error:\s*)+/i, '');
-    s = s.replace(/^(Domain error:\s*)+/i, '');
-    s = s.replace(/^(Internal error:\s*)+/i, '');
-    return s.trim();
-  };
-
   const handleSend = () => {
-    if (!input.trim() || isStreaming) return;
+    if (!input.trim() || isStreaming || isSendingLocalRef.current) return;
     const prompt = input.trim();
     setInput('');
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
-    onSendMessage(prompt);
+    isSendingLocalRef.current = true;
+    onSendMessage(prompt).finally(() => {
+      isSendingLocalRef.current = false;
+    });
     setTimeout(() => {
       activeTurnRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 60);
@@ -132,21 +119,41 @@ export const ChatView = ({
     e.target.style.height = `${Math.min(e.target.scrollHeight, 180)}px`;
   };
 
+  // Convert active streaming tools into ToolStep format
+  const activeToolSteps: ToolStep[] = activeTools.map((t) => ({
+    id: t.id,
+    toolName: t.name,
+    args: t.preview,
+    result: t.summary,
+    status: t.status,
+  }));
+
+  // Build streaming turn if active
+  const streamingTurn: ChatTurn | null = isStreaming
+    ? {
+        id: `streaming-${Date.now()}`,
+        assistantMessages: [],
+        toolSteps: activeToolSteps,
+        finalText: streamingText,
+        createdAt: new Date().toISOString(),
+      }
+    : null;
+
   return (
-    <div className="flex-1 flex flex-col h-full bg-zinc-950 overflow-hidden relative">
+    <div className="flex-1 flex flex-col h-full bg-[#08090d] overflow-hidden relative select-none">
       {/* Toast Notification */}
       {reportToast && (
-        <div className="fixed top-4 right-4 z-50 bg-zinc-900 border border-indigo-500/50 text-indigo-200 text-xs px-3.5 py-2 rounded-lg shadow-xl flex items-center gap-2 animate-fade-in">
+        <div className="fixed top-4 right-4 z-50 bg-[#141824] border border-indigo-500/50 text-indigo-200 text-xs px-3.5 py-2 rounded-xl shadow-2xl flex items-center gap-2 animate-fade-in">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{reportToast}</span>
         </div>
       )}
 
       {/* Top Header */}
-      <header className="h-14 border-b border-zinc-800/80 px-5 flex items-center justify-between shrink-0 bg-zinc-900/40 backdrop-blur-xs select-none">
+      <header className="h-16 border-b border-white/5 px-6 flex items-center justify-between shrink-0 bg-[#0d1017]/85 backdrop-blur-md z-20">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-            <Bot className="w-4 h-4" />
+          <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shadow-xs">
+            <Bot className="w-5 h-5" />
           </div>
           <div>
             <h2 className="text-sm font-semibold text-zinc-100 truncate max-w-md">
@@ -164,210 +171,96 @@ export const ChatView = ({
           </div>
         </div>
 
+        {/* Right Header Actions: Skills Badges, Quota Pill, Inspector Button */}
         <div className="flex items-center gap-2">
+          {/* Active Skills Badges (Click to inspect) */}
           {agent && (
-            <span className="text-[11px] bg-zinc-800/80 text-zinc-300 border border-zinc-700/60 px-2.5 py-1 rounded-full flex items-center gap-1.5">
+            <button
+              onClick={onOpenAgentDrawer}
+              title="Nhấp để xem và cấu hình kỹ năng của Tác tử này"
+              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] text-zinc-300 transition-colors"
+            >
               <Sparkles className="w-3 h-3 text-cyan-400" />
-              <span>{agent.tools.builtin.length} tools</span>
-            </span>
+              <span>{agent.tools.builtin.length} Kỹ năng kích hoạt</span>
+            </button>
           )}
+
+          {/* Mini Quota Pill */}
+          <button
+            onClick={onOpenQuotaModal}
+            title="Theo dõi Hạn mức & Sử dụng Model"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] text-zinc-300 transition-colors"
+          >
+            <Gauge className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden md:inline">Hạn mức</span>
+          </button>
+
+          {/* Agent Inspector Button */}
+          <button
+            onClick={onOpenAgentDrawer}
+            title="Cấu hình Tác tử & Bộ kỹ năng"
+            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white border border-white/5 transition-colors"
+          >
+            <Sliders className="w-4 h-4" />
+          </button>
         </div>
       </header>
 
       {/* Messages Scroll Area */}
-      <div className="flex-1 overflow-y-auto p-5">
+      <div className="flex-1 overflow-y-auto px-5 py-4">
         <div className="max-w-4xl mx-auto w-full">
-          {messages.length === 0 && !isStreaming ? (
+          {completedTurns.length === 0 && !isStreaming ? (
+            /* Empty State */
             <div className="h-[60vh] flex flex-col items-center justify-center text-center p-8 select-none">
-              <div className="w-12 h-12 rounded-xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-3 shadow-lg shadow-indigo-500/5">
-                <Sparkles className="w-6 h-6 text-cyan-400" />
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600/20 to-cyan-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 mb-4 shadow-xl shadow-indigo-500/10">
+                <Sparkles className="w-7 h-7 text-cyan-400" />
               </div>
-              <h3 className="text-base font-semibold text-zinc-200 mb-1">
-                Bắt đầu trò chuyện với {agent?.name || 'Hubbub'}
+              <h3 className="text-base font-bold text-zinc-100 mb-1.5">
+                Bắt đầu trò chuyện cùng {agent?.name || 'Hubbub AI'}
               </h3>
-              <p className="text-xs text-zinc-400 max-w-md mb-4 leading-relaxed">
-                {agent?.system_prompt.slice(0, 160)}...
+              <p className="text-xs text-zinc-400 max-w-md mb-6 leading-relaxed">
+                {agent?.system_prompt.slice(0, 180)}...
               </p>
+
+              {/* Suggestion Chips */}
               <div className="flex flex-wrap justify-center gap-2 max-w-lg">
                 <button
-                  onClick={() =>
-                    setInput(
-                      'Giải thích dễ hiểu về đệ quy trong lập trình và cho ví dụ hoàn chỉnh bằng Rust'
-                    )
-                  }
-                  className="px-3.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-lg text-xs text-zinc-300 transition-colors"
+                  onClick={() => setInput('Giải thích trực quan về cơ chế mượn (Borrowing & Ownership) trong Rust')}
+                  className="px-3.5 py-2 bg-[#121622] hover:bg-[#161b2a] border border-white/5 hover:border-white/15 rounded-xl text-xs text-zinc-300 transition-all text-left"
                 >
-                  Đệ quy trong Rust với ví dụ cụ thể
+                  💡 Cơ chế Ownership trong Rust
                 </button>
                 <button
-                  onClick={() =>
-                    setInput('Phân tích ưu nhược điểm của kiến trúc Clean Architecture trong Rust')
-                  }
-                  className="px-3.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-lg text-xs text-zinc-300 transition-colors"
+                  onClick={() => setInput('Tìm kiếm thông tin mới nhất và tổng hợp báo cáo về Tauri 2')}
+                  className="px-3.5 py-2 bg-[#121622] hover:bg-[#161b2a] border border-white/5 hover:border-white/15 rounded-xl text-xs text-zinc-300 transition-all text-left"
                 >
-                  Clean Architecture trong Rust
+                  🌐 Tìm kiếm & tổng hợp thông tin về Tauri 2
                 </button>
               </div>
             </div>
           ) : (
             <>
-              {messages.map((msg, idx) =>
-                msg.role === 'user' ? (
-                  /* User Message: Box message on the right */
-                  <div
-                    key={msg.id}
-                    ref={idx === messages.length - 1 ? activeTurnRef : undefined}
-                    className="flex justify-end my-4 scroll-mt-6"
-                  >
-                    <div className="bg-zinc-800/95 hover:bg-zinc-800 text-zinc-100 border border-zinc-700/50 rounded-2xl rounded-tr-xs px-4 py-2.5 max-w-2xl shadow-xs transition-colors">
-                      {msg.parts.map((part, pIdx) => {
-                        if (part.type === 'Text') {
-                          const textContent =
-                            typeof part.content === 'string'
-                              ? part.content
-                              : typeof part.content === 'object' && part.content !== null
-                              ? JSON.stringify(part.content)
-                              : String(part.content ?? '');
-                          return (
-                            <div
-                              key={pIdx}
-                              className="whitespace-pre-wrap select-text text-xs leading-relaxed font-normal"
-                            >
-                              {textContent}
-                            </div>
-                          );
-                        }
-                        return null;
-                      })}
-                      <div className="text-[10px] text-zinc-400/70 mt-1 text-right select-none font-mono">
-                        {new Date(msg.created_at).toLocaleTimeString('vi-VN', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  /* Agent Message: No box, rendered directly on background like Gemini/Antigravity */
-                  <div key={msg.id} className="w-full my-6 flex gap-3.5">
-                    <div className="w-7 h-7 rounded-lg shrink-0 flex items-center justify-center text-xs font-semibold select-none bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 mt-0.5">
-                      <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-                    </div>
+              {/* Completed Turns */}
+              {completedTurns.map((turn, idx) => (
+                <div key={turn.id} ref={idx === completedTurns.length - 1 ? activeTurnRef : undefined}>
+                  <ChatTurnItem
+                    turn={turn}
+                    agent={agent}
+                    onSaveAsReport={handleSaveAsReport}
+                    isStreaming={false}
+                  />
+                </div>
+              ))}
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2 select-none">
-                        <span className="text-xs font-semibold text-zinc-200">
-                          {agent?.name || 'AI Assistant'}
-                        </span>
-                        <span className="text-[10px] text-zinc-400 font-mono">
-                          {new Date(msg.created_at).toLocaleTimeString('vi-VN', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </span>
-                      </div>
-
-                      <div className="select-text text-xs leading-relaxed text-zinc-200">
-                        {msg.parts.map((part, pIdx) => {
-                          if (part.type === 'Text') {
-                            const textContent =
-                              typeof part.content === 'string'
-                                ? part.content
-                                : typeof part.content === 'object' && part.content !== null
-                                ? JSON.stringify(part.content)
-                                : String(part.content ?? '');
-                            return <MarkdownContent key={pIdx} content={textContent} />;
-                          }
-                          if (part.type === 'ToolCall') {
-                            const toolName =
-                              typeof part.content === 'object' &&
-                              part.content !== null &&
-                              'name' in part.content
-                                ? String((part.content as Record<string, unknown>).name)
-                                : part.name || 'Công cụ';
-                            return (
-                              <div
-                                key={pIdx}
-                                className="my-2 p-2 bg-zinc-900/60 border border-zinc-800/80 rounded-lg font-mono text-[11px] text-zinc-400 flex items-center gap-2 max-w-md"
-                              >
-                                <Wrench className="w-3 h-3 text-indigo-400 shrink-0" />
-                                <span>
-                                  Gọi công cụ: <strong className="text-zinc-200">{toolName}</strong>
-                                </span>
-                              </div>
-                            );
-                          }
-                          if (part.type === 'ToolResult') {
-                            const resStr =
-                              typeof part.content === 'object' &&
-                              part.content !== null &&
-                              'result' in part.content
-                                ? JSON.stringify((part.content as Record<string, unknown>).result)
-                                : String(part.result ?? '');
-                            return (
-                              <div
-                                key={pIdx}
-                                className="my-2 p-2 bg-zinc-900/60 border border-zinc-800/80 rounded-lg font-mono text-[11px] text-zinc-400 flex items-center gap-2 max-w-md"
-                              >
-                                <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
-                                <span className="truncate">Kết quả: {resStr}</span>
-                              </div>
-                            );
-                          }
-                          return null;
-                        })}
-
-                        {/* Save as Report Button */}
-                        <div className="mt-2.5 flex items-center gap-2 select-none">
-                          <button
-                            onClick={() => handleSaveAsReport(msg)}
-                            title="Lưu câu trả lời thành Báo cáo trong Workspace reports/"
-                            className="px-2.5 py-1 bg-zinc-900/60 hover:bg-zinc-800 text-[11px] text-zinc-400 hover:text-zinc-200 rounded-md border border-zinc-800/80 flex items-center gap-1.5 transition-colors"
-                          >
-                            <FileText className="w-3 h-3 text-indigo-400" />
-                            Lưu thành Báo cáo
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )
-              )}
-
-              {/* Streaming Assistant Message: Rendered directly on background */}
-              {isStreaming && (
-                <div
-                  ref={
-                    messages.length === 0 || messages[messages.length - 1].role !== 'user'
-                      ? activeTurnRef
-                      : undefined
-                  }
-                  className="w-full my-6 flex gap-3.5 scroll-mt-6"
-                >
-                  <div className="w-7 h-7 rounded-lg shrink-0 flex items-center justify-center text-xs font-semibold select-none bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 mt-0.5">
-                    <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2 select-none">
-                      <span className="text-xs font-semibold text-zinc-200">
-                        {agent?.name || 'AI Assistant'}
-                      </span>
-                      <span className="inline-flex items-center gap-1.5 text-[11px] text-indigo-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
-                        Đang sinh phản hồi...
-                      </span>
-                    </div>
-
-                    {/* Active Tools display */}
-                    <ActiveToolsList tools={activeTools} />
-
-                    {/* Streaming Markdown text with blinking cursor */}
-                    <div className="select-text text-xs leading-relaxed text-zinc-200">
-                      <MarkdownContent content={streamingText} />
-                      <span className="inline-block w-1.5 h-3.5 bg-cyan-400 ml-0.5 align-middle animate-pulse" />
-                    </div>
-                  </div>
+              {/* Streaming Turn (Live Response) */}
+              {streamingTurn && (
+                <div ref={activeTurnRef}>
+                  <ChatTurnItem
+                    turn={streamingTurn}
+                    agent={agent}
+                    onSaveAsReport={handleSaveAsReport}
+                    isStreaming={true}
+                  />
                 </div>
               )}
             </>
@@ -379,54 +272,80 @@ export const ChatView = ({
 
       {/* Error Banner */}
       {errorMsg && (
-        <div className="mx-5 mb-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center justify-between text-xs text-red-300">
+        <div className="mx-6 mb-3 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl flex items-center justify-between text-xs text-rose-300 animate-fade-in">
           <div className="flex items-center gap-2.5 min-w-0">
-            <AlertTriangle className="w-4 h-4 shrink-0 text-red-400" />
-            <span className="leading-relaxed break-words">{cleanError(errorMsg)}</span>
+            <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
+            <span className="leading-relaxed break-words">{errorMsg}</span>
           </div>
           <button
             onClick={onOpenSettings}
-            className="px-2.5 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-200 border border-red-500/30 rounded-md font-medium text-[11px] transition-colors shrink-0 ml-3"
+            className="px-3 py-1 bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-500/30 rounded-lg text-[11px] font-medium transition-colors shrink-0 ml-3"
           >
-            Cấu hình
+            Cài đặt API Key
           </button>
         </div>
       )}
 
-      {/* Composer Input Area */}
-      <footer className="p-4 border-t border-zinc-800/80 bg-zinc-900/60 backdrop-blur-xs shrink-0">
+      {/* Floating Modern Composer (LobeChat Style) */}
+      <footer className="p-4 bg-gradient-to-t from-[#08090d] via-[#08090d]/95 to-transparent shrink-0">
         <div className="max-w-4xl mx-auto">
-          <div className="relative bg-zinc-950 border border-zinc-800 focus-within:border-indigo-500/80 rounded-xl transition-all shadow-xs flex items-end p-2 gap-2">
-            <textarea
-              ref={textareaRef}
-              rows={1}
-              value={input}
-              onChange={handleTextareaInput}
-              onKeyDown={handleKeyDown}
-              onCompositionStart={() => setIsComposing(true)}
-              onCompositionEnd={() => setIsComposing(false)}
-              placeholder={`Nhắn tin với ${agent?.name || 'Hubbub'}... (Enter để gửi, Shift+Enter xuống dòng)`}
-              className="flex-1 bg-transparent border-0 resize-none px-2 py-1 text-xs text-zinc-100 placeholder:text-zinc-600 focus:outline-hidden min-h-[36px] max-h-[180px]"
-            />
+          <div className="bg-[#10141e]/90 hover:bg-[#121622] border border-white/10 focus-within:border-indigo-500/70 rounded-2xl transition-all shadow-xl shadow-black/40 p-2 flex flex-col gap-1.5 backdrop-blur-md">
+            {/* Top Composer Chip: Active Agent & Skills */}
+            <div className="flex items-center justify-between px-2 pt-1 text-[11px] text-zinc-400 select-none">
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-1 text-indigo-400 font-medium">
+                  <Sparkles className="w-3 h-3 text-cyan-400" />
+                  {agent?.name || 'Tác tử'}
+                </span>
+                <span className="text-zinc-600">•</span>
+                <span className="text-zinc-500 font-mono text-[10px]">
+                  {agent?.model}
+                </span>
+              </div>
+              {input.length > 0 && (
+                <button
+                  onClick={() => setInput('')}
+                  title="Xóa nội dung nhập"
+                  className="text-zinc-500 hover:text-zinc-300 transition-colors p-0.5"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              )}
+            </div>
 
-            {isStreaming ? (
-              <button
-                onClick={onCancelRun}
-                title="Dừng sinh phản hồi"
-                className="p-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-medium transition-all flex items-center justify-center shrink-0 active:scale-95 shadow-sm"
-              >
-                <Square className="w-3.5 h-3.5 fill-current" />
-              </button>
-            ) : (
-              <button
-                onClick={handleSend}
-                disabled={!input.trim()}
-                title="Gửi tin nhắn (Enter)"
-                className="p-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:hover:bg-indigo-600 text-white rounded-lg text-xs font-medium transition-all flex items-center justify-center shrink-0 active:scale-95 shadow-sm"
-              >
-                <Send className="w-3.5 h-3.5" />
-              </button>
-            )}
+            {/* Input Row */}
+            <div className="flex items-end gap-2 px-1">
+              <textarea
+                ref={textareaRef}
+                rows={1}
+                value={input}
+                onChange={handleTextareaInput}
+                onKeyDown={handleKeyDown}
+                onCompositionStart={() => setIsComposing(true)}
+                onCompositionEnd={() => setIsComposing(false)}
+                placeholder={`Nhắn tin với ${agent?.name || 'Hubbub'}... (Enter để gửi, Shift+Enter xuống dòng)`}
+                className="flex-1 bg-transparent border-0 resize-none px-1 py-1.5 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-hidden min-h-[38px] max-h-[180px] leading-relaxed"
+              />
+
+              {isStreaming ? (
+                <button
+                  onClick={onCancelRun}
+                  title="Dừng sinh phản hồi"
+                  className="p-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold transition-all flex items-center justify-center shrink-0 shadow-md shadow-rose-600/25 active:scale-95"
+                >
+                  <Square className="w-4 h-4 fill-current" />
+                </button>
+              ) : (
+                <button
+                  onClick={handleSend}
+                  disabled={!input.trim()}
+                  title="Gửi tin nhắn (Enter)"
+                  className="p-2.5 bg-gradient-to-tr from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 disabled:opacity-30 disabled:hover:from-indigo-600 disabled:hover:to-indigo-500 text-white rounded-xl text-xs font-semibold transition-all flex items-center justify-center shrink-0 shadow-md shadow-indigo-600/25 active:scale-95 cursor-pointer disabled:cursor-not-allowed"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </footer>

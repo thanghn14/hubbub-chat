@@ -5,6 +5,50 @@ Sắp xếp theo thứ tự thời gian (mới nhất ở trên).
 
 > **QUY TẮC:** PR/commit có thay đổi quan trọng mà KHÔNG cập nhật file này sẽ bị reject.
 
+## [2026-10-04] Xử lý 4 Vấn đề Cốt lõi: Hợp nhất Lượt Hội thoại, Quản lý Kỹ năng Tác tử, Theo dõi Hạn mức Model và Tái thiết kế Toàn diện Giao diện Chuẩn LobeChat & Element
+
+**Bối cảnh:**
+Người dùng gửi yêu cầu giải quyết 4 vấn đề quan trọng trong ứng dụng:
+1. Agent phản hồi nhiều lần cho 1 tin nhắn do các bước gọi công cụ bị phân mảnh thành nhiều bubble độc lập và thiếu khóa chống gửi đúp.
+2. Tác tử (Agent) cho từng công việc cần được cấu hình chuyên môn, bộ kỹ năng và công cụ riêng biệt nhưng trước đây chưa được thể hiện rõ nét trên ứng dụng.
+3. Thiếu tính năng theo dõi hạn mức (quota), số lượt gọi, token tiêu thụ và giới hạn RPM/RPD của từng model AI dẫn tới nguy cơ chạm lỗi 429.
+4. Giao diện chưa đẹp, cần thiết kế lại toàn bộ theo chuẩn thanh lịch, gọn gàng, độ tương phản cao tham khảo từ **LobeChat** và **Element**.
+
+**Quyết định & Giải pháp Triển khai:**
+1. **Khắc phục lỗi Agent phản hồi nhiều lần (Vấn đề 1):**
+   - **Mô hình Lượt Hội thoại Hợp nhất (`turnGrouper.ts`, `ChatTurnItem.tsx`):** Gom toàn bộ chuỗi message trong 1 lượt (tin nhắn User + các bước gọi công cụ `ToolCall` + kết quả `ToolResult` + văn bản kết luận của `Assistant`) vào đúng 1 khối `ChatTurn` duy nhất.
+   - **Thẻ Accordion Công cụ gập mở:** Các công cụ gọi trung gian hiển thị dạng danh sách thẻ trạng thái gấp gọn (Đang chạy / Hoàn thành / Thất bại), nhấp vào để kiểm tra Input/Output chi tiết mà không phân mảnh luồng đàm thoại.
+   - **Khóa In-Flight gửi tin an toàn (`isSendingRef`):** Khóa đồng bộ ngay lập tức tại frontend khi nhấn gửi hoặc Enter, ngăn ngừa triệt để gọi đúp lệnh IPC khi bộ gõ tiếng Việt đang hoạt động.
+   - **Đồng bộ Cancellation ID (`runtime.rs`, `service.rs`):** Chuẩn hóa `execute_run_with_id` để bản đồ hủy `active_cancellations` khớp chính xác với `run.id` thực thi.
+
+2. **Thể hiện rõ ràng Cấu hình & Kỹ năng của từng Tác tử (Vấn đề 2):**
+   - **Chuẩn hóa Siêu dữ liệu Kỹ năng (`SKILLS_METADATA`):** Phân định rạch ròi 6 nhóm kỹ năng chuyên môn: 🌐 Web Search (Google / Tavily), 📄 Web Fetch (Trích xuất trang web), 📁 File Reader (Đọc workspace), 🗂️ Directory List, 📝 Report Generator (Báo cáo Markdown), 📖 Report Reader.
+   - **Huy hiệu Kỹ năng trên Chat Header:** Hiển thị trực quan số kỹ năng đang kích hoạt của tác tử; nhấp vào để mở ngay ngăn kéo cấu hình.
+   - **Ngăn kéo Thanh bên `AgentSkillsDrawer.tsx` (LobeChat Inspector):** Cho phép xem/chỉnh sửa trực tiếp System Prompt, bật/tắt từng kỹ năng công cụ, đổi mô hình vận hành và xem ngân sách của tác tử.
+   - **Phân hệ Thư viện Tác tử `AgentsHubView.tsx`:** Màn hình quản lý toàn bộ tác tử với thẻ bài chuyên gia, vai trò, huy hiệu kỹ năng và nút trò chuyện tức thì.
+
+3. **Tính năng Giám sát & Quản lý Hạn mức Model (Vấn đề 3):**
+   - **Backend Aggregation Service (`model_usage.rs`, `model_quota.rs`):** Truy vấn tổng hợp từ SQLite tính toán tổng token (prompt + completion), số lượt gọi trong ngày, tổng số run, chi phí tích lũy ước tính và mốc sử dụng gần nhất theo từng model AI.
+   - **Định mức Quota Mặc định:** Cung cấp thông số RPM và RPD chuẩn xác theo gói miễn phí của Google Gemini (15 RPM / 1,500 RPD), Claude (50 RPM / 5,000 RPD), OpenAI (500 RPM), Groq (30 RPM / 14,400 RPD), Ollama (Local vô hạn).
+   - **Giao diện Giám sát `ModelQuotaModal.tsx` & Mini Quota Pill:** Bảng điều khiển trực quan với thanh tiến độ hạn mức ngày, tỉ lệ %, trạng thái cảnh báo khi chạm ngưỡng 80% hoặc lỗi 429.
+
+4. **Tái thiết kế Toàn diện Giao diện (Vấn đề 4 - LobeChat & Element):**
+   - **Bố cục Điều hướng 2 Tầng (Dual-Tier Shell):**
+     - Cột điều hướng hẹp **Activity Dock (56px)** phong cách Element: Logo nhận diện phát sáng, icon chuyển đổi nhanh giữa Trò chuyện (Chat), Trung tâm Tác tử (Agents), Báo cáo Workspace (Workspace), Hạn mức (Quota), Cài đặt và Benchmark.
+     - Cột danh sách phụ **Secondary Sidebar (260px)**: Tìm kiếm hội thoại, phân nhóm theo dòng thời gian (Hôm nay, Hôm qua, 7 ngày trước, Cũ hơn), và bộ chuyển nhanh Tác tử (Agent chips).
+   - **Bảng màu Obsidian Dark cao cấp (`#08090d` / `#10141e` / `#181d29`):** Viền kính siêu mỏng (`hairline-border`), hiệu ứng mờ sương (`backdrop-blur-md`), độ tương phản chữ đạt chuẩn WCAG AA (`#f8fafc` và `#94a3b8`), không chói lóa và không mờ tối.
+   - **Hộp soạn thảo Nổi (Floating Modern Composer):** Thiết kế bo cong nổi thanh lịch (`rounded-2xl shadow-2xl`), hiển thị huy hiệu tác tử/model đang kích hoạt, textarea tự động dãn nở, nút Gửi/Dừng phản hồi hiệu ứng êm dịu.
+
+5. **Kiểm thử & Đảm bảo Chất lượng:**
+   - 88/88 tests PASS (`cargo test --workspace`).
+   - 0 warnings trên `cargo clippy --workspace --all-targets -- -D warnings`.
+   - `pnpm build` đạt 0 lỗi TypeScript/Vite.
+   - Toàn bộ files mới và chỉnh sửa đều tuân thủ nghiêm ngặt quy định `< 400 dòng`, functions `< 60 dòng`.
+
+**Trạng thái:** Đã áp dụng
+
+---
+
 ## [2026-10-04] Triển khai Sprint 2.4: Audit Logs, Workspace Watcher & Re-indexing, Security Battery, và Giao diện Báo cáo Workspace
 
 **Bối cảnh:**

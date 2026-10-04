@@ -93,10 +93,10 @@ export const AgentModal = ({ isOpen, onClose, onSaveAgent, existingAgent }: Agen
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl w-full max-w-xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-fade-in select-none">
+      <div className="bg-[#0e111a] border border-white/10 rounded-2xl w-full max-w-xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-zinc-800 bg-zinc-900/50">
+        <div className="flex items-center justify-between p-4.5 border-b border-white/10 bg-[#121622]/80">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
               <Bot className="w-4 h-4" />
@@ -112,7 +112,7 @@ export const AgentModal = ({ isOpen, onClose, onSaveAgent, existingAgent }: Agen
           </div>
           <button
             onClick={onClose}
-            className="text-zinc-400 hover:text-zinc-200 p-1 rounded-lg hover:bg-zinc-800 transition-colors"
+            className="text-zinc-400 hover:text-zinc-200 p-1.5 rounded-lg hover:bg-white/5 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>

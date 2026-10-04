@@ -187,6 +187,15 @@ impl AppService {
         Ok(())
     }
 
+    // --- Model Quota & Usage ---
+
+    pub async fn get_model_usage_stats(
+        &self,
+    ) -> Result<Vec<hubbub_domain::entities::model_quota::ModelUsageStat>, AppError> {
+        let stats = self.store.get_model_usage_stats().await?;
+        Ok(stats)
+    }
+
     // --- Agents ---
 
     pub async fn list_agents(&self) -> Vec<Agent> {
@@ -325,7 +334,7 @@ impl AppService {
         }
 
         let exec_result = runtime
-            .execute_run(conversation_id, &agent, Some(prompt), token)
+            .execute_run_with_id(conversation_id, &agent, Some(prompt), token, Some(run_id))
             .await;
 
         {

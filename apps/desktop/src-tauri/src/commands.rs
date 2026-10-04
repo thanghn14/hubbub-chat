@@ -7,6 +7,7 @@ use hubbub_domain::entities::agent::Agent;
 use hubbub_domain::entities::audit_log::AuditLog;
 use hubbub_domain::entities::conversation::{Conversation, Message};
 use hubbub_domain::entities::document::Document;
+use hubbub_domain::entities::model_quota::ModelUsageStat;
 use hubbub_domain::entities::run::Run;
 
 use crate::events::TauriEventSink;
@@ -234,4 +235,13 @@ pub async fn list_audit_logs(
         .await
         .map_err(|e| e.to_string())
 }
+
+/// Tauri IPC command: get model usage and quota stats.
+#[tauri::command]
+pub async fn get_model_usage_stats(
+    service: State<'_, Arc<AppService>>,
+) -> Result<Vec<ModelUsageStat>, String> {
+    service.get_model_usage_stats().await.map_err(|e| e.to_string())
+}
+
 
