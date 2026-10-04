@@ -51,8 +51,8 @@ impl Default for AppConfig {
             ProviderSettings {
                 kind: "openai_compat".to_string(),
                 base_url: Some("http://localhost:11434/v1".to_string()),
-                default_model: "llama3.2".to_string(),
-                timeout_s: 120,
+                default_model: "qwen2.5-coder:7b".to_string(),
+                timeout_s: 180,
                 max_retries: 1,
             },
         );

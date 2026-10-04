@@ -288,11 +288,17 @@ impl AppService {
         } else if agent.model.starts_with("gemini") {
             "gemini"
         } else if agent.model.starts_with("llama") {
-            if self.has_provider_key("groq").await.unwrap_or(false) {
+            if self.has_provider_key("groq").await.unwrap_or(false) && agent.model.contains("versatile") {
                 "groq"
             } else {
                 "ollama"
             }
+        } else if agent.model.to_lowercase().contains("qwen")
+            || agent.model.to_lowercase().contains("deepseek")
+            || agent.model.to_lowercase().contains("mistral")
+            || agent.model.to_lowercase().contains("phi")
+        {
+            "ollama"
         } else if agent.model.starts_with("gpt")
             || agent.model.starts_with("o1")
             || agent.model.starts_with("o3")

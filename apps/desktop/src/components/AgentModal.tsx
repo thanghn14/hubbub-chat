@@ -27,6 +27,7 @@ const POPULAR_MODELS = [
   'claude-sonnet-4-20250514',
   'claude-3-5-sonnet',
   'llama-3.3-70b-versatile',
+  'qwen2.5-coder:7b',
   'llama3.2',
 ];
 

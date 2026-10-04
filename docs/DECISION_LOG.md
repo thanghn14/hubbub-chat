@@ -5,6 +5,33 @@ Sắp xếp theo thứ tự thời gian (mới nhất ở trên).
 
 > **QUY TẮC:** PR/commit có thay đổi quan trọng mà KHÔNG cập nhật file này sẽ bị reject.
 
+## [2026-10-04] Cấu hình Kết nối Model Cục bộ Qwen 2.5 Coder 7B Qua Ollama Cho Agent Developer
+
+**Bối cảnh:**
+Người dùng sở hữu model chuyên mã nguồn `qwen2.5-coder:7b` chạy cục bộ thông qua Ollama (`http://localhost:11434`) và yêu cầu cấu hình Hubbub kết nối tới mô hình này để phục vụ tác vụ lập trình mà không cần phụ thuộc vào cloud API key hay lo ngại về chi phí/hạn mức rate limit.
+
+**Quyết định & Giải pháp Triển khai:**
+1. **Định tuyến Provider Tự động (`crates/app/src/service.rs`):**
+   - Cập nhật logic nhận diện model trong `AppService::send_message`: Nhận diện các họ model local (`qwen`, `deepseek`, `mistral`, `phi`) tự động trỏ về provider `"ollama"`.
+   - Bỏ qua bước kiểm tra API key bắt buộc đối với provider `"ollama"`, cho phép sử dụng hoàn toàn offline.
+2. **Cấu hình Mặc định Provider Ollama (`crates/app/src/config.rs`):**
+   - Thiết lập endpoint chuẩn OpenAI-compatible của Ollama: `http://localhost:11434/v1`.
+   - Cài đặt model mặc định là `"qwen2.5-coder:7b"` với thời gian chờ phản hồi an toàn `timeout_s: 180`.
+3. **Gán Model Mặc định cho Tác tử Lập trình (`crates/app/src/seed.rs`):**
+   - Chuyển đổi mô hình mặc định của Agent `developer` (Kỹ sư Lập trình) sang `"qwen2.5-coder:7b"`.
+4. **Theo dõi Hạn mức & Mức Tiêu thụ Token (`crates/domain`, `crates/store`):**
+   - Trong `model_quota.rs`: Tự động nhận diện model có tiền tố `qwen` thuộc provider `"ollama"` với hạn mức vô hạn (`0 RPM / 0 RPD`).
+   - Trong `model_usage.rs`: Bổ sung `"qwen2.5-coder:7b"` vào danh sách theo dõi tài nguyên mặc định (`default_seed_models`).
+5. **Giao diện Người Dùng (`apps/desktop`):**
+   - Bổ sung `Qwen 2.5 Coder 7B (Ollama Cục bộ)` vào danh sách mô hình phổ biến trong `ModelSelector.tsx`, `AgentModal.tsx` và `AgentSkillsDrawer.tsx`.
+6. **Kiểm thử & Đảm bảo Chất lượng:**
+   - Đã kiểm tra trực tiếp endpoint Ollama cục bộ: `qwen2.5-coder:7b` hỗ trợ tốt cả text completion lẫn native tool calling.
+   - 88/88 tests PASS (`cargo test --workspace`), 0 clippy warnings, `pnpm build` thành công 100%.
+
+**Trạng thái:** Đã áp dụng
+
+---
+
 ## [2026-10-04] Xử lý 4 Vấn đề Cốt lõi: Hợp nhất Lượt Hội thoại, Quản lý Kỹ năng Tác tử, Theo dõi Hạn mức Model và Tái thiết kế Toàn diện Giao diện Chuẩn LobeChat & Element
 
 **Bối cảnh:**

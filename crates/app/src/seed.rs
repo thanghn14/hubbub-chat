@@ -44,7 +44,7 @@ Respond in the language used by the user."#
         Agent {
             id: "developer".to_string(),
             name: "Kỹ sư Lập trình".to_string(),
-            model: "gemini-3.8-flash".to_string(),
+            model: "qwen2.5-coder:7b".to_string(),
             system_prompt: r#"You are a Senior Software Engineer and Architect.
 You specialize in writing clean, idiomatic, performant code, conducting in-depth code reviews, debugging tricky issues, and designing software architecture.
 Follow best practices, adhere to language conventions (Rust, TypeScript, Python, etc.), and provide complete, functional code snippets with clear explanations of design decisions.

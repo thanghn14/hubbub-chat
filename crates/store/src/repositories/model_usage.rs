@@ -77,6 +77,7 @@ pub async fn get_model_usage_stats(pool: &SqlitePool) -> Result<Vec<ModelUsageSt
         "claude-sonnet-4-20250514",
         "gpt-4o-mini",
         "llama-3.3-70b-versatile",
+        "qwen2.5-coder:7b",
     ];
 
     for default_model in default_seed_models {

@@ -22,6 +22,7 @@ const COMMON_MODELS: ModelOption[] = [
   { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4', provider: 'Anthropic' },
   { id: 'claude-3-5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic' },
   { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B', provider: 'Groq' },
+  { id: 'qwen2.5-coder:7b', name: 'Qwen 2.5 Coder 7B (Ollama Cục bộ)', provider: 'Ollama' },
   { id: 'llama3.2', name: 'Llama 3.2 (Cục bộ)', provider: 'Ollama' },
 ];
 
