@@ -6,7 +6,6 @@ import {
   Plus,
   Save,
   CheckCircle2,
-  XCircle,
   Shield,
   FileCode,
   Calendar,
@@ -17,6 +16,7 @@ import {
 } from 'lucide-react';
 import { MarkdownContent } from './MarkdownContent';
 import { MilkdownEditor } from './MilkdownEditor';
+import { AuditLogsTable } from './AuditLogsTable';
 import type { WorkspaceDocument, AuditLog } from '../types';
 
 interface WorkspaceReportsViewProps {
@@ -43,7 +43,6 @@ export const WorkspaceReportsView = ({ onBackToChat }: WorkspaceReportsViewProps
 
   // Audit Logs state
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
-  const [auditFilter, setAuditFilter] = useState<'all' | 'allow' | 'deny'>('all');
 
   // Load documents and reports
   const loadDocuments = useCallback(async (query = '') => {
@@ -134,11 +133,6 @@ export const WorkspaceReportsView = ({ onBackToChat }: WorkspaceReportsViewProps
       console.error('Failed to create report:', err);
     }
   };
-
-  const filteredLogs = auditLogs.filter((log) => {
-    if (auditFilter === 'all') return true;
-    return log.decision.toLowerCase() === auditFilter;
-  });
 
   return (
     <div className="flex-1 flex flex-col h-full bg-zinc-950 text-zinc-100 select-none overflow-hidden">
@@ -392,97 +386,9 @@ export const WorkspaceReportsView = ({ onBackToChat }: WorkspaceReportsViewProps
           </div>
         </div>
       ) : (
-        /* Audit Logs View */
-        <div className="flex-1 flex flex-col overflow-hidden p-6 max-w-5xl mx-auto w-full">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-sm font-semibold text-zinc-200">Nhật ký kiểm toán bảo mật (Audit Logs)</h2>
-              <p className="text-xs text-zinc-400">
-                Ghi nhận mọi lượt thực thi công cụ (Tool execution) của các Agent, gồm cả hành động được cho phép và bị từ chối.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-1.5 p-1 bg-zinc-900 rounded-lg border border-zinc-800">
-              <button
-                onClick={() => setAuditFilter('all')}
-                className={`px-2.5 py-1 text-xs rounded font-medium transition-colors ${
-                  auditFilter === 'all' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-400 hover:text-zinc-200'
-                }`}
-              >
-                Tất cả ({auditLogs.length})
-              </button>
-              <button
-                onClick={() => setAuditFilter('allow')}
-                className={`px-2.5 py-1 text-xs rounded font-medium transition-colors ${
-                  auditFilter === 'allow' ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800/60' : 'text-zinc-400 hover:text-zinc-200'
-                }`}
-              >
-                Cho phép
-              </button>
-              <button
-                onClick={() => setAuditFilter('deny')}
-                className={`px-2.5 py-1 text-xs rounded font-medium transition-colors ${
-                  auditFilter === 'deny' ? 'bg-rose-950/80 text-rose-300 border border-rose-800/60' : 'text-zinc-400 hover:text-zinc-200'
-                }`}
-              >
-                Từ chối
-              </button>
-            </div>
-          </div>
-
-          <div className="flex-1 bg-zinc-900/60 border border-zinc-800/80 rounded-xl overflow-hidden flex flex-col">
-            <div className="overflow-y-auto flex-1 divide-y divide-zinc-800/60">
-              {filteredLogs.length === 0 ? (
-                <div className="p-8 text-center text-xs text-zinc-400">Chưa có bản ghi kiểm toán nào phù hợp.</div>
-              ) : (
-                filteredLogs.map((log) => {
-                  const isDeny = log.decision.toLowerCase() === 'deny';
-                  return (
-                    <div key={log.id} className="p-3.5 hover:bg-zinc-850/40 transition-colors flex items-start gap-3">
-                      {isDeny ? (
-                        <XCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                      ) : (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                      )}
-                      <div className="flex-1 min-w-0 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs font-semibold text-zinc-200">{log.tool_name}</span>
-                            <span
-                              className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                                isDeny
-                                  ? 'bg-rose-950/80 text-rose-300 border border-rose-800/60'
-                                  : 'bg-emerald-950/80 text-emerald-300 border border-emerald-800/60'
-                              }`}
-                            >
-                              {isDeny ? 'Bị từ chối' : 'Cho phép'}
-                            </span>
-                          </div>
-                          <span className="font-mono text-[10px] text-zinc-400">
-                            {new Date(log.timestamp).toLocaleString('vi-VN')}
-                          </span>
-                        </div>
-
-                        <div className="font-mono text-[11px] text-zinc-400 bg-zinc-950/60 p-2 rounded border border-zinc-850 truncate">
-                          <span className="text-zinc-400">args: </span>
-                          {log.args_digest}
-                        </div>
-
-                        {log.result_digest && (
-                          <div className="text-[11px] text-zinc-400 flex items-center gap-1.5 pl-1">
-                            <span className="text-zinc-400">Kết quả:</span>
-                            <span className="text-zinc-300 truncate">{log.result_digest}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        </div>
+        <AuditLogsTable auditLogs={auditLogs} />
       )}
     </div>
   );
 };
+

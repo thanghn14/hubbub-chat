@@ -348,10 +348,7 @@ impl AppService {
             active.remove(&run_id);
         }
 
-        match exec_result {
-            Ok(run) => Ok(run),
-            Err(e) => Err(AppError::Agent(e.to_string())),
-        }
+        exec_result.map_err(|e| AppError::Agent(e.to_string()))
     }
 
     pub async fn cancel_run(&self, run_id: Uuid) -> Result<bool, AppError> {
@@ -399,4 +396,3 @@ impl AppService {
         self.reports.list_audit_logs(limit).await
     }
 }
-
