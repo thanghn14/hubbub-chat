@@ -14,7 +14,7 @@ import { useLanguage } from '../context/LanguageContext.tsx'
 export const DownloadSection: React.FC = () => {
   const [copiedHash, setCopiedHash] = useState(false)
   const { t } = useLanguage()
-  const sha256Checksum = 'e8b394d82f7169ac421fbc21e789bc4412e873918a2401f8931293290ae5107e'
+  const sha256Checksum = 'cd9ee74f54aa6e3867c569393d3c46e0445b89ecf62b56d9e7af4019fdb29b78'
 
   const handleCopyHash = () => {
     navigator.clipboard.writeText(sha256Checksum)
@@ -62,9 +62,8 @@ export const DownloadSection: React.FC = () => {
               {/* Action Buttons */}
               <div className="space-y-3">
                 <a
-                  href="https://github.com/thanghn14/hubbub-chat/releases/download/v0.1.0/hubbub-chat_0.1.0_x64_en-US.msi"
-                  target="_blank"
-                  rel="noreferrer"
+                  href="/downloads/hubbub-chat_0.1.0_x64_en-US.msi"
+                  download="hubbub-chat_0.1.0_x64_en-US.msi"
                   className="w-full py-3.5 sm:py-4 px-5 sm:px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-500 dark:bg-gradient-to-r dark:from-indigo-600 dark:to-violet-600 dark:hover:from-indigo-500 dark:hover:to-violet-500 text-white font-bold text-sm sm:text-base shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-between group border border-transparent dark:border-white/10"
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -74,24 +73,34 @@ export const DownloadSection: React.FC = () => {
                       <div className="text-[10px] sm:text-[11px] text-indigo-100 dark:text-indigo-200/80 font-normal truncate">hubbub-chat_0.1.0_x64_en-US.msi</div>
                     </div>
                   </div>
-                  <span className="text-[11px] font-mono text-white bg-black/20 px-2.5 py-1 rounded shrink-0">~18.4 MB</span>
+                  <span className="text-[11px] font-mono text-white bg-black/20 px-2.5 py-1 rounded shrink-0">6.8 MB</span>
                 </a>
 
-                <a
-                  href="https://github.com/thanghn14/hubbub-chat/releases/download/v0.1.0/hubbub-chat_0.1.0_x64.portable.zip"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="w-full py-3 px-5 sm:px-6 rounded-2xl bg-slate-100 dark:bg-white/[0.03] hover:bg-slate-200 dark:hover:bg-white/[0.07] border border-slate-200 dark:border-white/[0.07] hover:border-indigo-400 dark:hover:border-violet-500/25 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-semibold text-xs sm:text-sm transition-all flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <FolderArchive className="w-4 h-4 text-indigo-600 dark:text-violet-400 shrink-0" />
-                    <div className="text-left min-w-0">
-                      <div className="text-xs sm:text-sm font-semibold truncate">{t('download.zipBtn')}</div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400 font-normal truncate">hubbub-chat_0.1.0_x64.portable.zip</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <a
+                    href="/downloads/hubbub-chat_0.1.0_x64-setup.exe"
+                    download="hubbub-chat_0.1.0_x64-setup.exe"
+                    className="py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-white/[0.03] hover:bg-slate-200 dark:hover:bg-white/[0.07] border border-slate-200 dark:border-white/[0.07] hover:border-indigo-400 dark:hover:border-violet-500/25 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium text-xs transition-all flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <Download className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                      <span className="truncate">Setup Installer (.exe)</span>
                     </div>
-                  </div>
-                  <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">~22.1 MB</span>
-                </a>
+                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 shrink-0 ml-1">4.7 MB</span>
+                  </a>
+
+                  <a
+                    href="/downloads/hubbub-chat_0.1.0_x64.portable.zip"
+                    download="hubbub-chat_0.1.0_x64.portable.zip"
+                    className="py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-white/[0.03] hover:bg-slate-200 dark:hover:bg-white/[0.07] border border-slate-200 dark:border-white/[0.07] hover:border-indigo-400 dark:hover:border-violet-500/25 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium text-xs transition-all flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <FolderArchive className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                      <span className="truncate">Portable Package (.zip)</span>
+                    </div>
+                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 shrink-0 ml-1">6.8 MB</span>
+                  </a>
+                </div>
 
                 <div className="pt-1 text-center">
                   <a
