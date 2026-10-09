@@ -329,7 +329,7 @@ export const AgentOrchestrationDemo: React.FC = () => {
             </div>
 
             {/* Scenario toggle pills */}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Demo scenarios">
               {scenarios.map((sc, idx) => (
                 <button
                   key={sc.id}
@@ -337,7 +337,8 @@ export const AgentOrchestrationDemo: React.FC = () => {
                     setSelectedScenarioIndex(idx)
                     setCurrentStepIndex(0)
                   }}
-                  className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs font-semibold transition-all ${
+                  aria-pressed={selectedScenarioIndex === idx}
+                  className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                     selectedScenarioIndex === idx
                       ? 'bg-indigo-600 text-white shadow-sm'
                       : 'bg-slate-100 dark:bg-white/[0.03] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-white/[0.06]'
@@ -366,8 +367,9 @@ export const AgentOrchestrationDemo: React.FC = () => {
             </div>
             <button
               onClick={() => setCurrentStepIndex(0)}
-              className="self-end sm:self-center px-3 py-1.5 rounded-lg bg-white dark:bg-white/[0.04] hover:bg-slate-100 dark:hover:bg-white/[0.08] text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1.5 border border-slate-200 dark:border-white/[0.06] shrink-0"
+              className="self-end sm:self-center px-3 py-1.5 rounded-lg bg-white dark:bg-white/[0.04] hover:bg-slate-100 dark:hover:bg-white/[0.08] text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1.5 border border-slate-200 dark:border-white/[0.06] shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
               title="Reset simulation"
+              aria-label="Reset simulation steps"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>{t('agents.simulation.reset')}</span>
@@ -375,7 +377,7 @@ export const AgentOrchestrationDemo: React.FC = () => {
           </div>
 
           {/* Stepper Timeline Navigation (2x2 on mobile, 4 in row on tablet & desktop) */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6 sm:mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6 sm:mb-8" role="tablist" aria-label="Execution steps">
             {selectedScenario.steps.map((st, idx) => {
               const isCurrent = idx === currentStepIndex
               const isPast = idx < currentStepIndex
@@ -383,7 +385,9 @@ export const AgentOrchestrationDemo: React.FC = () => {
                 <button
                   key={st.stepNumber}
                   onClick={() => setCurrentStepIndex(idx)}
-                  className={`p-2.5 sm:p-3 rounded-xl border text-left transition-all ${
+                  role="tab"
+                  aria-selected={isCurrent}
+                  className={`p-2.5 sm:p-3 rounded-xl border text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                     isCurrent
                       ? 'bg-indigo-50 dark:bg-indigo-600/15 border-indigo-300 dark:border-indigo-500/40 shadow-sm'
                       : isPast
@@ -431,14 +435,14 @@ export const AgentOrchestrationDemo: React.FC = () => {
                 <button
                   disabled={currentStepIndex === 0}
                   onClick={() => setCurrentStepIndex((prev) => Math.max(0, prev - 1))}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-white/[0.04] hover:bg-slate-100 dark:hover:bg-white/[0.08] disabled:opacity-30 disabled:pointer-events-none text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-transparent"
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-white/[0.04] hover:bg-slate-100 dark:hover:bg-white/[0.08] disabled:opacity-30 disabled:pointer-events-none text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                 >
                   {t('agents.simulation.back')}
                 </button>
                 <button
                   disabled={currentStepIndex === selectedScenario.steps.length - 1}
                   onClick={() => setCurrentStepIndex((prev) => Math.min(selectedScenario.steps.length - 1, prev + 1))}
-                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:pointer-events-none text-white shadow-sm flex items-center gap-1.5"
+                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:pointer-events-none text-white shadow-sm flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                 >
                   <span>{t('agents.simulation.next')}</span>
                   <ArrowRight className="w-3.5 h-3.5" />

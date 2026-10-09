@@ -16,11 +16,19 @@ export const App: React.FC = () => {
     <ThemeProvider>
       <LanguageProvider>
         <div className="min-h-screen bg-[#fafafc] dark:bg-[#090a0f] text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-indigo-500/20 selection:text-indigo-800 dark:selection:bg-indigo-500/30 dark:selection:text-indigo-200 transition-colors duration-200">
+          {/* Accessible Skip Link */}
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2 focus:bg-indigo-600 focus:text-white focus:font-semibold focus:text-xs focus:rounded-xl focus:shadow-2xl focus:outline-none focus:ring-2 focus:ring-indigo-300"
+          >
+            Skip to main content
+          </a>
+
           {/* Sticky Glass Navbar */}
           <Navbar />
 
           {/* Main Content Sections */}
-          <main className="flex-1">
+          <main id="main-content" className="flex-1">
             {/* 1. Hero Section with Creative Living Agent Studio */}
             <HeroSection />
 

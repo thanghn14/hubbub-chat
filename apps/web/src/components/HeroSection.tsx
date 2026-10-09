@@ -237,10 +237,12 @@ export const HeroSection: React.FC = () => {
                 </div>
 
                 {/* View Mode Toggle */}
-                <div className="flex items-center gap-1 bg-slate-200/70 dark:bg-white/[0.04] p-0.5 rounded-lg text-xs">
+                <div role="tablist" aria-label="Canvas mode" className="flex items-center gap-1 bg-slate-200/70 dark:bg-white/[0.04] p-0.5 rounded-lg text-xs">
                   <button
+                    role="tab"
+                    aria-selected={activeTab === 'chat'}
                     onClick={() => setActiveTab('chat')}
-                    className={`px-2.5 py-1 rounded text-[11px] font-medium transition-all ${
+                    className={`px-2.5 py-1 rounded text-[11px] font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                       activeTab === 'chat'
                         ? 'bg-white dark:bg-indigo-600/40 text-indigo-700 dark:text-white shadow-sm font-semibold'
                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -249,8 +251,10 @@ export const HeroSection: React.FC = () => {
                     {lang === 'vi' ? 'Hội thoại Agent' : 'Agent Chat'}
                   </button>
                   <button
+                    role="tab"
+                    aria-selected={activeTab === 'doc'}
                     onClick={() => setActiveTab('doc')}
-                    className={`px-2.5 py-1 rounded text-[11px] font-medium transition-all ${
+                    className={`px-2.5 py-1 rounded text-[11px] font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                       activeTab === 'doc'
                         ? 'bg-white dark:bg-indigo-600/40 text-indigo-700 dark:text-white shadow-sm font-semibold'
                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -266,7 +270,7 @@ export const HeroSection: React.FC = () => {
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 shrink-0">
                   {lang === 'vi' ? 'Kịch bản:' : 'Scenario:'}
                 </span>
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex items-center gap-1.5 shrink-0" role="group" aria-label="Scenario selector">
                   {(['slm', 'security', 'mamba'] as const).map((scKey) => {
                     const sc = scenarios[scKey]
                     const isSelected = selectedScenarioId === scKey
@@ -274,7 +278,8 @@ export const HeroSection: React.FC = () => {
                       <button
                         key={scKey}
                         onClick={() => setSelectedScenarioId(scKey)}
-                        className={`px-2.5 py-0.5 rounded-lg text-[11px] font-medium transition-all ${
+                        aria-pressed={isSelected}
+                        className={`px-2.5 py-0.5 rounded-lg text-[11px] font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                           isSelected
                             ? 'bg-indigo-600 text-white shadow-sm'
                             : 'bg-slate-200/60 dark:bg-white/[0.04] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -418,9 +423,13 @@ export const HeroSection: React.FC = () => {
                     Enter
                   </span>
                 </div>
-                <div className="w-8 h-8 rounded-xl bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center text-white shrink-0 cursor-pointer shadow-sm">
+                <button
+                  type="button"
+                  aria-label={lang === 'vi' ? 'Gửi lệnh nghiên cứu mẫu' : 'Send research prompt'}
+                  className="w-8 h-8 rounded-xl bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center text-white shrink-0 cursor-pointer shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                >
                   <ArrowRight className="w-4 h-4" />
-                </div>
+                </button>
               </div>
             </div>
           </div>

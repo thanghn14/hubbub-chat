@@ -41,11 +41,13 @@ export const SecurityArchitecture: React.FC = () => {
           </div>
 
           {/* Interactive Layer Pipeline (Responsive for Mobile, Tablet md:grid-cols-5, Desktop lg:grid-cols-5) */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-3 mb-6 sm:mb-8">
+          <div role="tablist" aria-label="Architecture layers" className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-3 mb-6 sm:mb-8">
             {/* Layer 1: Desktop UI */}
             <button
+              role="tab"
+              aria-selected={activeLayer === 'ui'}
               onClick={() => setActiveLayer('ui')}
-              className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border text-left transition-all ${
+              className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                 activeLayer === 'ui'
                   ? 'bg-indigo-50 dark:bg-violet-600/15 border-indigo-300 dark:border-violet-500/50 text-indigo-900 dark:text-white shadow-sm'
                   : 'bg-slate-50 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.05] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.05]'
@@ -58,8 +60,10 @@ export const SecurityArchitecture: React.FC = () => {
 
             {/* Layer 2: Rust Core */}
             <button
+              role="tab"
+              aria-selected={activeLayer === 'core'}
               onClick={() => setActiveLayer('core')}
-              className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border text-left transition-all ${
+              className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                 activeLayer === 'core'
                   ? 'bg-indigo-50 dark:bg-violet-600/15 border-indigo-300 dark:border-violet-500/50 text-indigo-900 dark:text-white shadow-sm'
                   : 'bg-slate-50 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.05] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.05]'
@@ -72,8 +76,10 @@ export const SecurityArchitecture: React.FC = () => {
 
             {/* Layer 3: Policy Engine */}
             <button
+              role="tab"
+              aria-selected={activeLayer === 'policy'}
               onClick={() => setActiveLayer('policy')}
-              className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border text-left transition-all col-span-2 sm:col-span-1 ${
+              className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border text-left transition-all col-span-2 sm:col-span-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                 activeLayer === 'policy'
                   ? 'bg-emerald-50 dark:bg-emerald-600/15 border-emerald-300 dark:border-emerald-500/50 text-emerald-950 dark:text-white shadow-sm'
                   : 'bg-slate-50 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.05] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.05]'
@@ -86,8 +92,10 @@ export const SecurityArchitecture: React.FC = () => {
 
             {/* Layer 4: Tool Gateway */}
             <button
+              role="tab"
+              aria-selected={activeLayer === 'tools'}
               onClick={() => setActiveLayer('tools')}
-              className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border text-left transition-all ${
+              className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                 activeLayer === 'tools'
                   ? 'bg-sky-50 dark:bg-sky-600/15 border-sky-300 dark:border-sky-500/50 text-sky-950 dark:text-white shadow-sm'
                   : 'bg-slate-50 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.05] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.05]'
@@ -100,8 +108,10 @@ export const SecurityArchitecture: React.FC = () => {
 
             {/* Layer 5: Local Storage */}
             <button
+              role="tab"
+              aria-selected={activeLayer === 'storage'}
               onClick={() => setActiveLayer('storage')}
-              className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border text-left transition-all ${
+              className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                 activeLayer === 'storage'
                   ? 'bg-indigo-50 dark:bg-indigo-600/15 border-indigo-300 dark:border-indigo-500/50 text-indigo-950 dark:text-white shadow-sm'
                   : 'bg-slate-50 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.05] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.05]'

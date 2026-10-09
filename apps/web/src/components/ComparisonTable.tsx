@@ -36,10 +36,10 @@ export const ComparisonTable: React.FC = () => {
             <table className="w-full text-left border-collapse min-w-[640px]">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-white/[0.02]">
-                  <th className="p-4 sm:p-6 text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 w-1/4">
+                  <th scope="col" className="p-4 sm:p-6 text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 w-1/4">
                     {t('compare.colFeature')}
                   </th>
-                  <th className="p-4 sm:p-6 text-xs sm:text-sm font-extrabold text-indigo-900 dark:text-violet-300 bg-indigo-50/80 dark:bg-violet-600/[0.08] border-x border-indigo-200 dark:border-violet-500/20 w-1/3">
+                  <th scope="col" className="p-4 sm:p-6 text-xs sm:text-sm font-extrabold text-indigo-900 dark:text-violet-300 bg-indigo-50/80 dark:bg-violet-600/[0.08] border-x border-indigo-200 dark:border-violet-500/20 w-1/3">
                     <div className="flex items-center gap-2">
                       <span>{t('compare.colHubbub')}</span>
                       <span className="text-[10px] bg-indigo-600 text-white dark:bg-violet-500/20 dark:text-violet-200 px-2 py-0.5 rounded font-mono border border-transparent dark:border-violet-500/30">
@@ -47,10 +47,10 @@ export const ComparisonTable: React.FC = () => {
                       </span>
                     </div>
                   </th>
-                  <th className="p-4 sm:p-6 text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 w-1/5">
+                  <th scope="col" className="p-4 sm:p-6 text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 w-1/5">
                     {t('compare.colWeb')}
                   </th>
-                  <th className="p-4 sm:p-6 text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 w-1/5">
+                  <th scope="col" className="p-4 sm:p-6 text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 w-1/5">
                     {t('compare.colElectron')}
                   </th>
                 </tr>
@@ -59,9 +59,9 @@ export const ComparisonTable: React.FC = () => {
                 {Array.isArray(comparisonData) && comparisonData.map((row, idx) => (
                   <tr key={idx} className="hover:bg-slate-50/80 dark:hover:bg-white/[0.015] transition-colors">
                     {/* Feature name */}
-                    <td className="p-4 sm:p-6 font-semibold text-slate-900 dark:text-white text-xs sm:text-sm">
+                    <th scope="row" className="p-4 sm:p-6 font-semibold text-slate-900 dark:text-white text-xs sm:text-sm text-left">
                       {row.feature}
-                    </td>
+                    </th>
 
                     {/* Hubbub column */}
                     <td className="p-4 sm:p-6 bg-indigo-50/40 dark:bg-violet-600/[0.04] border-x border-indigo-100 dark:border-violet-500/15 font-medium text-indigo-950 dark:text-violet-200">

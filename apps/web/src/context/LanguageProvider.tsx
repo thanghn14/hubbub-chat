@@ -13,6 +13,10 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return 'en' // Default to English per user requirement
   })
 
+  React.useEffect(() => {
+    document.documentElement.lang = lang
+  }, [lang])
+
   const setLang = (newLang: Language) => {
     setLangState(newLang)
     try {

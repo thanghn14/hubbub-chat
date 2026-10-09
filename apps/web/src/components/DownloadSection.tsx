@@ -13,7 +13,7 @@ import { useLanguage } from '../context/LanguageContext.tsx'
 
 export const DownloadSection: React.FC = () => {
   const [copiedHash, setCopiedHash] = useState(false)
-  const { t } = useLanguage()
+  const { lang, t } = useLanguage()
   const sha256Checksum = 'cd9ee74f54aa6e3867c569393d3c46e0445b89ecf62b56d9e7af4019fdb29b78'
 
   const handleCopyHash = () => {
@@ -109,7 +109,7 @@ export const DownloadSection: React.FC = () => {
                     rel="noreferrer"
                     className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium inline-flex items-center gap-1"
                   >
-                    <span>Xem tất cả bản phát hành trên GitHub Releases →</span>
+                    <span>{lang === 'vi' ? 'Xem tất cả bản phát hành trên GitHub Releases →' : 'View all releases on GitHub Releases →'}</span>
                   </a>
                 </div>
               </div>
@@ -202,7 +202,7 @@ export const DownloadSection: React.FC = () => {
         <div className="mt-12 sm:mt-16 grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 max-w-4xl mx-auto">
           <div className="glass-card p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-white/[0.06] relative">
             <span className="text-3xl font-extrabold text-indigo-500/15 dark:text-violet-500/20 absolute top-4 right-5 font-mono">01</span>
-            <div className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-violet-400 mb-1">Bước 1</div>
+            <div className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-violet-400 mb-1">{lang === 'vi' ? 'Bước 1' : 'Step 1'}</div>
             <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white mb-1.5">{t('download.steps.step1Title')}</h4>
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
               {t('download.steps.step1Desc')}
@@ -211,7 +211,7 @@ export const DownloadSection: React.FC = () => {
 
           <div className="glass-card p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-white/[0.06] relative">
             <span className="text-3xl font-extrabold text-indigo-500/15 dark:text-violet-500/20 absolute top-4 right-5 font-mono">02</span>
-            <div className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-violet-400 mb-1">Bước 2</div>
+            <div className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-violet-400 mb-1">{lang === 'vi' ? 'Bước 2' : 'Step 2'}</div>
             <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white mb-1.5">{t('download.steps.step2Title')}</h4>
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
               {t('download.steps.step2Desc')}
@@ -220,7 +220,7 @@ export const DownloadSection: React.FC = () => {
 
           <div className="glass-card p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-white/[0.06] relative">
             <span className="text-3xl font-extrabold text-indigo-500/15 dark:text-violet-500/20 absolute top-4 right-5 font-mono">03</span>
-            <div className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-violet-400 mb-1">Bước 3</div>
+            <div className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-violet-400 mb-1">{lang === 'vi' ? 'Bước 3' : 'Step 3'}</div>
             <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white mb-1.5">{t('download.steps.step3Title')}</h4>
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
               {t('download.steps.step3Desc')}

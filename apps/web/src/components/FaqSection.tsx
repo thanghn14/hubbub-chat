@@ -39,8 +39,11 @@ export const FaqSection: React.FC = () => {
                 className="glass-card rounded-2xl border border-slate-200/90 dark:border-white/[0.07] overflow-hidden transition-all duration-200 shadow-sm"
               >
                 <button
+                  id={`faq-question-${idx}`}
                   onClick={() => toggle(idx)}
-                  className="w-full p-4 sm:p-6 text-left flex items-center justify-between gap-3 sm:gap-4 hover:bg-slate-50/60 dark:hover:bg-white/[0.015] transition-colors"
+                  aria-expanded={isOpen}
+                  aria-controls={`faq-answer-${idx}`}
+                  className="w-full p-4 sm:p-6 text-left flex items-center justify-between gap-3 sm:gap-4 hover:bg-slate-50/60 dark:hover:bg-white/[0.015] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-2xl"
                 >
                   <span className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-snug">
                     {faq.q}
@@ -55,7 +58,12 @@ export const FaqSection: React.FC = () => {
                 </button>
 
                 {isOpen && (
-                  <div className="px-4 pb-4 sm:px-6 sm:pb-6 pt-0 text-xs sm:text-sm text-slate-600 dark:text-slate-300/90 leading-relaxed border-t border-slate-100 dark:border-white/[0.04]">
+                  <div
+                    id={`faq-answer-${idx}`}
+                    role="region"
+                    aria-labelledby={`faq-question-${idx}`}
+                    className="px-4 pb-4 sm:px-6 sm:pb-6 pt-0 text-xs sm:text-sm text-slate-600 dark:text-slate-300/90 leading-relaxed border-t border-slate-100 dark:border-white/[0.04]"
+                  >
                     <div className="pt-3.5">{faq.a}</div>
                   </div>
                 )}
