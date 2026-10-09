@@ -62,7 +62,7 @@ export const DownloadSection: React.FC = () => {
               {/* Action Buttons */}
               <div className="space-y-3">
                 <a
-                  href="https://github.com/releases"
+                  href="https://github.com/thanghn14/hubbub-chat/releases/download/v0.1.0/hubbub-chat_0.1.0_x64_en-US.msi"
                   target="_blank"
                   rel="noreferrer"
                   className="w-full py-3.5 sm:py-4 px-5 sm:px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-500 dark:bg-gradient-to-r dark:from-indigo-600 dark:to-violet-600 dark:hover:from-indigo-500 dark:hover:to-violet-500 text-white font-bold text-sm sm:text-base shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-between group border border-transparent dark:border-white/10"
@@ -78,7 +78,7 @@ export const DownloadSection: React.FC = () => {
                 </a>
 
                 <a
-                  href="https://github.com/releases"
+                  href="https://github.com/thanghn14/hubbub-chat/releases/download/v0.1.0/hubbub-chat_0.1.0_x64.portable.zip"
                   target="_blank"
                   rel="noreferrer"
                   className="w-full py-3 px-5 sm:px-6 rounded-2xl bg-slate-100 dark:bg-white/[0.03] hover:bg-slate-200 dark:hover:bg-white/[0.07] border border-slate-200 dark:border-white/[0.07] hover:border-indigo-400 dark:hover:border-violet-500/25 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-semibold text-xs sm:text-sm transition-all flex items-center justify-between"

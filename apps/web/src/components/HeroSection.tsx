@@ -167,7 +167,7 @@ export const HeroSection: React.FC = () => {
               </a>
 
               <a
-                href="https://github.com"
+                href="https://github.com/thanghn14/hubbub-chat"
                 target="_blank"
                 rel="noreferrer"
                 className="px-5 py-3.5 rounded-2xl bg-slate-100 dark:bg-white/[0.04] hover:bg-slate-200 dark:hover:bg-white/[0.08] text-slate-800 dark:text-white font-semibold text-xs sm:text-sm border border-slate-200 dark:border-white/[0.08] transition-all flex items-center justify-center gap-2 shadow-sm"
@@ -250,6 +250,7 @@ export const HeroSection: React.FC = () => {
                     }`}
                   >
                     Agent Chat
+                    {lang === 'vi' ? 'Hội thoại Agent' : 'Agent Chat'}
                   </button>
                   <button
                     onClick={() => setActiveTab('doc')}
@@ -260,6 +261,7 @@ export const HeroSection: React.FC = () => {
                     }`}
                   >
                     Milkdown Doc
+                    {lang === 'vi' ? 'Báo cáo Milkdown' : 'Milkdown Doc'}
                   </button>
                 </div>
               </div>
@@ -268,6 +270,7 @@ export const HeroSection: React.FC = () => {
               <div className="bg-slate-50 dark:bg-[#07090f] border-b border-slate-200 dark:border-white/[0.06] px-3.5 sm:px-4 py-2 flex items-center justify-between gap-2 overflow-x-auto">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 shrink-0">
                   Scenario:
+                  {lang === 'vi' ? 'Kịch bản:' : 'Scenario:'}
                 </span>
                 <div className="flex items-center gap-1.5 shrink-0">
                   {(['slm', 'security', 'mamba'] as const).map((scKey) => {

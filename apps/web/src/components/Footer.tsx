@@ -114,7 +114,7 @@ export const Footer: React.FC = () => {
             <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-400">
               <li>
                 <a
-                  href="https://github.com"
+                  href="https://github.com/thanghn14/hubbub-chat"
                   target="_blank"
                   rel="noreferrer"
                   className="hover:text-indigo-600 dark:hover:text-violet-300 transition-colors flex items-center gap-1.5"
@@ -126,14 +126,24 @@ export const Footer: React.FC = () => {
                 </a>
               </li>
               <li>
-                <span className="hover:text-indigo-600 dark:hover:text-violet-300 transition-colors cursor-pointer">
-                  Master Development Plan
-                </span>
+                <a
+                  href="https://github.com/thanghn14/hubbub-chat#readme"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="hover:text-indigo-600 dark:hover:text-violet-300 transition-colors"
+                >
+                  Documentation & Roadmap
+                </a>
               </li>
               <li>
-                <span className="hover:text-indigo-600 dark:hover:text-violet-300 transition-colors cursor-pointer">
+                <a
+                  href="https://github.com/thanghn14/hubbub-chat/releases"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="hover:text-indigo-600 dark:hover:text-violet-300 transition-colors"
+                >
                   Changelog & Releases
-                </span>
+                </a>
               </li>
             </ul>
           </div>
