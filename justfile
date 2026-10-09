@@ -15,6 +15,14 @@ dev:
 dev-ui:
     cd apps/desktop && npm run dev
 
+# Run branding website in dev mode
+web-dev:
+    cd apps/web && npm run dev
+
+# Build branding website
+web-build:
+    cd apps/web && npm run build
+
 # === Testing ===
 
 # Run all Rust tests
