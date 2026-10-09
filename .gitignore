@@ -8,6 +8,7 @@ Cargo.lock
 node_modules/
 dist/
 .vite/
+*.tsbuildinfo
 
 # IDE
 .idea/
