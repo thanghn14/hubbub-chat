@@ -71,7 +71,7 @@ export const DownloadSection: React.FC = () => {
                     <Download className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform shrink-0" />
                     <div className="text-left min-w-0">
                       <div className="text-xs sm:text-sm font-bold truncate">{t('download.msiBtn')}</div>
-                      <div className="text-[10px] sm:text-[11px] text-indigo-100 dark:text-indigo-200/80 font-normal truncate">hubbub-chat_0.1.0_x64_en-US.msi</div>
+                      <div className="text-[10px] sm:text-[11px] text-indigo-100 dark:text-indigo-200/80 font-normal truncate">{t('download.msiSub')}</div>
                     </div>
                   </div>
                   <span className="text-[11px] font-mono text-white bg-black/20 px-2.5 py-1 rounded shrink-0">~18.4 MB</span>
@@ -85,24 +85,10 @@ export const DownloadSection: React.FC = () => {
                 >
                   <div className="flex items-center gap-2.5">
                     <FolderArchive className="w-4 h-4 text-indigo-600 dark:text-violet-400 shrink-0" />
-                    <div className="text-left min-w-0">
-                      <div className="text-xs sm:text-sm font-semibold truncate">{t('download.zipBtn')}</div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400 font-normal truncate">hubbub-chat_0.1.0_x64.portable.zip</div>
-                    </div>
+                    <span>{t('download.zipBtn')}</span>
                   </div>
-                  <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">~22.1 MB</span>
+                  <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">{t('download.zipSub')}</span>
                 </a>
-
-                <div className="pt-1 text-center">
-                  <a
-                    href="https://github.com/thanghn14/hubbub-chat/releases"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium inline-flex items-center gap-1"
-                  >
-                    <span>Xem tất cả bản phát hành trên GitHub Releases →</span>
-                  </a>
-                </div>
               </div>
 
               {/* SHA256 Checksum Verification */}

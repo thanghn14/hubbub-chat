@@ -9,7 +9,7 @@ import {
   FileText,
   ArrowRight,
   Zap,
-  Database
+  Scale
 } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext.tsx'
 import { Logo } from './Logo.tsx'
@@ -125,14 +125,17 @@ export const HeroSection: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 xl:gap-12 items-center">
           {/* LEFT COLUMN: HERO HEADLINE & ACTIONS (5-6 cols) */}
           <div className="lg:col-span-5 xl:col-span-5 space-y-6 text-left">
-            {/* Status Pill */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100/90 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] backdrop-blur-md shadow-sm">
+            {/* Status & License Pill */}
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100/90 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] backdrop-blur-md shadow-sm">
               <span className="flex h-2 w-2 relative shrink-0">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-500 opacity-60"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-600 dark:bg-indigo-400"></span>
               </span>
-              <span className="text-[11px] sm:text-xs font-semibold text-slate-800 dark:text-slate-200">
+              <span className="text-[11px] sm:text-xs font-semibold text-indigo-700 dark:text-indigo-300">
                 {t('hero.pillTag')}
+              </span>
+              <span className="text-[10px] font-mono px-2 py-0.2 rounded bg-indigo-100 dark:bg-indigo-500/15 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/25">
+                Apache 2.0
               </span>
             </div>
 
@@ -201,10 +204,10 @@ export const HeroSection: React.FC = () => {
               </div>
 
               <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.05] flex items-center gap-2.5">
-                <Database className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <Scale className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                 <div className="min-w-0">
-                  <div className="text-xs font-semibold text-slate-900 dark:text-white truncate">SQLite FTS5</div>
-                  <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">Sub-ms Local Search</div>
+                  <div className="text-xs font-semibold text-slate-900 dark:text-white truncate">Apache 2.0</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">Open Source</div>
                 </div>
               </div>
             </div>
@@ -246,6 +249,7 @@ export const HeroSection: React.FC = () => {
                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
+                    Agent Chat
                     {lang === 'vi' ? 'Hội thoại Agent' : 'Agent Chat'}
                   </button>
                   <button
@@ -256,6 +260,7 @@ export const HeroSection: React.FC = () => {
                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
+                    Milkdown Doc
                     {lang === 'vi' ? 'Báo cáo Milkdown' : 'Milkdown Doc'}
                   </button>
                 </div>
@@ -264,6 +269,7 @@ export const HeroSection: React.FC = () => {
               {/* Scenario Selector Ribbon */}
               <div className="bg-slate-50 dark:bg-[#07090f] border-b border-slate-200 dark:border-white/[0.06] px-3.5 sm:px-4 py-2 flex items-center justify-between gap-2 overflow-x-auto">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 shrink-0">
+                  Scenario:
                   {lang === 'vi' ? 'Kịch bản:' : 'Scenario:'}
                 </span>
                 <div className="flex items-center gap-1.5 shrink-0">

@@ -1,5 +1,5 @@
 import React from 'react'
-import { ShieldCheck } from 'lucide-react'
+import { ShieldCheck, Scale } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext.tsx'
 import { Logo } from './Logo.tsx'
 
@@ -15,9 +15,14 @@ export const Footer: React.FC = () => {
             <div className="flex items-center gap-3">
               <Logo className="w-9 h-9 sm:w-10 sm:h-10 shrink-0" />
               <div>
-                <span className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 dark:text-white block">
-                  Hubbub <span className="text-indigo-600 dark:text-indigo-400 font-semibold">Chat</span>
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 dark:text-white block">
+                    Hubbub <span className="text-indigo-600 dark:text-indigo-400 font-semibold">Chat</span>
+                  </span>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/20">
+                    Apache 2.0
+                  </span>
+                </div>
                 <span className="text-[11px] text-slate-500 dark:text-slate-400">{t('nav.subtitle')}</span>
               </div>
             </div>
@@ -26,9 +31,15 @@ export const Footer: React.FC = () => {
               {t('footer.tagline')}
             </p>
 
-            <div className="pt-1 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-mono">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              <span>{t('footer.zeroTelemetry')}</span>
+            <div className="pt-1 flex flex-col gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-mono">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>{t('footer.zeroTelemetry')}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Scale className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span>{t('footer.licenseInfo')}</span>
+              </div>
             </div>
           </div>
 
