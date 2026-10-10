@@ -44,6 +44,7 @@ pub trait Store: Send + Sync {
     async fn list_audit_logs(&self, limit: u32) -> Result<Vec<AuditLog>, DomainError>;
 
     // Model Quota & Usage
-    async fn get_model_usage_stats(&self) -> Result<Vec<crate::entities::model_quota::ModelUsageStat>, DomainError>;
+    async fn get_model_usage_stats(
+        &self,
+    ) -> Result<Vec<crate::entities::model_quota::ModelUsageStat>, DomainError>;
 }
-

@@ -689,5 +689,3 @@ async fn test_model_usage_stats_aggregation() {
     assert_eq!(stat.rpd_limit, 1500);
     assert!(stat.is_free_tier);
 }
-
-

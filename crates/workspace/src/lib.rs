@@ -9,4 +9,3 @@ pub mod watcher;
 pub use errors::WorkspaceError;
 pub use service::LocalWorkspaceService;
 pub use watcher::{WorkspaceWatcher, WorkspaceWatcherSink};
-

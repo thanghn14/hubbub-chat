@@ -1,8 +1,8 @@
 //! LLM provider factory for instantiating concrete LLM adapters.
 
-use std::sync::Arc;
 use hubbub_domain::ports::llm::LlmProvider;
 use hubbub_llm::{AnthropicAdapter, OpenAiCompatAdapter, ProviderConfig};
+use std::sync::Arc;
 
 use crate::config::AppConfig;
 use crate::errors::AppError;

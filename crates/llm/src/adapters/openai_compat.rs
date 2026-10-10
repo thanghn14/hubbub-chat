@@ -3,7 +3,7 @@ use serde_json::Value;
 use std::collections::{BTreeMap, VecDeque};
 
 use crate::config::ProviderConfig;
-use crate::errors::{extract_retry_delay, format_api_error, LlmError};
+use crate::errors::{LlmError, extract_retry_delay, format_api_error};
 use crate::sse::SseEventReader;
 use hubbub_domain::errors::DomainError;
 use hubbub_domain::ports::llm::{
@@ -120,8 +120,9 @@ impl LlmProvider for OpenAiCompatAdapter {
                     let err_text = resp.text().await.unwrap_or_default();
 
                     if status == reqwest::StatusCode::TOO_MANY_REQUESTS && attempt <= max_retries {
-                        let delay = extract_retry_delay(&headers, &err_text)
-                            .unwrap_or_else(|| std::time::Duration::from_millis(1000 * (1 << (attempt - 1))));
+                        let delay = extract_retry_delay(&headers, &err_text).unwrap_or_else(|| {
+                            std::time::Duration::from_millis(1000 * (1 << (attempt - 1)))
+                        });
                         if delay <= std::time::Duration::from_secs(35) {
                             tracing::warn!(
                                 "Hit 429 rate limit (attempt {attempt}/{max_retries}). Sleeping {delay:?} before retry..."
@@ -145,8 +146,10 @@ impl LlmProvider for OpenAiCompatAdapter {
                     .into());
                 }
                 Err(_e) if attempt <= max_retries => {
-                    tokio::time::sleep(std::time::Duration::from_millis(200 * (1 << (attempt - 1))))
-                        .await;
+                    tokio::time::sleep(std::time::Duration::from_millis(
+                        200 * (1 << (attempt - 1)),
+                    ))
+                    .await;
                     continue;
                 }
                 Err(e) => return Err(LlmError::Http(e).into()),

@@ -1,5 +1,5 @@
-use std::time::Duration;
 use hubbub_domain::errors::DomainError;
+use std::time::Duration;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -43,10 +43,7 @@ impl From<LlmError> for DomainError {
 }
 
 /// Extract recommended retry delay from HTTP headers or response body.
-pub fn extract_retry_delay(
-    headers: &reqwest::header::HeaderMap,
-    body: &str,
-) -> Option<Duration> {
+pub fn extract_retry_delay(headers: &reqwest::header::HeaderMap, body: &str) -> Option<Duration> {
     // 1. Check Retry-After header (seconds)
     if let Some(val) = headers
         .get(reqwest::header::RETRY_AFTER)
@@ -74,7 +71,10 @@ pub fn extract_retry_delay(
         if let Some(sub) = val
             .pointer("/error/message")
             .and_then(|m| m.as_str())
-            .and_then(|msg| msg.find("retry in ").map(|idx| &msg[idx + "retry in ".len()..]))
+            .and_then(|msg| {
+                msg.find("retry in ")
+                    .map(|idx| &msg[idx + "retry in ".len()..])
+            })
         {
             let num_str: String = sub
                 .chars()

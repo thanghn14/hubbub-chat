@@ -1,8 +1,8 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use tempfile::tempdir;
 use hubbub_domain::ports::workspace_service::WorkspaceService;
 use hubbub_workspace::LocalWorkspaceService;
+use tempfile::tempdir;
 
 #[tokio::test]
 async fn test_atomic_write_and_read_vietnamese_and_emojis() {
@@ -101,7 +101,9 @@ async fn test_protected_paths_cannot_be_overwritten() {
     let res_config = service.write_file("config.toml", "malicious_config").await;
     assert!(res_config.is_err());
 
-    let res_agent = service.write_file("agents/analyst/agent.toml", "malicious_agent").await;
+    let res_agent = service
+        .write_file("agents/analyst/agent.toml", "malicious_agent")
+        .await;
     assert!(res_agent.is_err());
 
     let res_versions = service.write_file(".versions/fake.bak", "tamper").await;
@@ -113,9 +115,24 @@ async fn test_list_files_and_reindex() {
     let dir = tempdir().unwrap();
     let service = LocalWorkspaceService::new(dir.path());
 
-    service.write_file("reports/báo cáo A.md", "# Báo cáo Khảo sát Thị trường\n\nNội dung A").await.unwrap();
-    service.write_file("reports/báo cáo B.md", "# Phân tích Kỹ thuật 2026\n\nNội dung B").await.unwrap();
-    service.write_file("notes/ghi chú.txt", "Note 1").await.unwrap();
+    service
+        .write_file(
+            "reports/báo cáo A.md",
+            "# Báo cáo Khảo sát Thị trường\n\nNội dung A",
+        )
+        .await
+        .unwrap();
+    service
+        .write_file(
+            "reports/báo cáo B.md",
+            "# Phân tích Kỹ thuật 2026\n\nNội dung B",
+        )
+        .await
+        .unwrap();
+    service
+        .write_file("notes/ghi chú.txt", "Note 1")
+        .await
+        .unwrap();
 
     let reports = service.list_files("reports").await.unwrap();
     assert_eq!(reports.len(), 2);
@@ -147,21 +164,20 @@ async fn test_watcher_detects_external_file_modification_and_reindexes() {
     let (tx, mut rx) = tokio::sync::mpsc::channel(10);
     let sink = std::sync::Arc::new(TestSink { tx });
 
-    let watcher = hubbub_workspace::WorkspaceWatcher::start(
-        dir.path(),
-        service.clone(),
-        sink,
-    )
-    .unwrap();
+    let watcher =
+        hubbub_workspace::WorkspaceWatcher::start(dir.path(), service.clone(), sink).unwrap();
 
     let reports_dir = dir.path().join("reports");
     tokio::fs::create_dir_all(&reports_dir).await.unwrap();
 
     // Simulate external edit (outside LocalWorkspaceService)
     let file_path = reports_dir.join("external_report.md");
-    tokio::fs::write(&file_path, "# Báo cáo Từ Bên Ngoài\n\nNội dung tự sửa bằng text editor")
-        .await
-        .unwrap();
+    tokio::fs::write(
+        &file_path,
+        "# Báo cáo Từ Bên Ngoài\n\nNội dung tự sửa bằng text editor",
+    )
+    .await
+    .unwrap();
 
     let received = tokio::time::timeout(tokio::time::Duration::from_secs(3), rx.recv()).await;
     assert!(received.is_ok(), "Timed out waiting for watcher event");
@@ -179,12 +195,8 @@ async fn test_watcher_ignores_self_writes() {
     let (tx, mut rx) = tokio::sync::mpsc::channel(10);
     let sink = std::sync::Arc::new(TestSink { tx });
 
-    let watcher = hubbub_workspace::WorkspaceWatcher::start(
-        dir.path(),
-        service.clone(),
-        sink,
-    )
-    .unwrap();
+    let watcher =
+        hubbub_workspace::WorkspaceWatcher::start(dir.path(), service.clone(), sink).unwrap();
 
     // App self-write via service.write_file
     service

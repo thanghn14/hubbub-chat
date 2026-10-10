@@ -95,7 +95,10 @@ impl WorkspaceWatcher {
             }
         }
 
-        matches!(path.extension().and_then(|ext| ext.to_str()), Some("md") | Some("txt"))
+        matches!(
+            path.extension().and_then(|ext| ext.to_str()),
+            Some("md") | Some("txt")
+        )
     }
 
     async fn event_loop(

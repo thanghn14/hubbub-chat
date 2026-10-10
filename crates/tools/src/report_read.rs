@@ -1,8 +1,8 @@
 //! Report reading tool for reading markdown reports from reports/.
 
-use std::sync::Arc;
 use hubbub_domain::errors::DomainError;
 use hubbub_domain::ports::workspace_service::WorkspaceService;
+use std::sync::Arc;
 
 pub struct ReportReadTool {
     workspace: Arc<dyn WorkspaceService>,

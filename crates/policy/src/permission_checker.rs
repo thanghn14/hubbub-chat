@@ -44,7 +44,8 @@ impl PermissionChecker {
                 } else {
                     "web_fetch".to_string()
                 },
-                reason: "Agent has NetworkPolicy::None (internet access is completely blocked)".to_string(),
+                reason: "Agent has NetworkPolicy::None (internet access is completely blocked)"
+                    .to_string(),
             }),
         }
     }
@@ -92,7 +93,10 @@ impl PermissionChecker {
                 return true;
             }
             if let Some(prefix) = pat.strip_suffix("/**") {
-                if normalized.strip_prefix(prefix).is_some_and(|rest| rest.is_empty() || rest.starts_with('/')) {
+                if normalized
+                    .strip_prefix(prefix)
+                    .is_some_and(|rest| rest.is_empty() || rest.starts_with('/'))
+                {
                     return true;
                 }
             } else if pat == normalized {

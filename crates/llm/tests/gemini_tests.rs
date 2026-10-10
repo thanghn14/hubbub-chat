@@ -3,9 +3,7 @@
 use wiremock::matchers::{body_json, method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
-use hubbub_domain::ports::llm::{
-    LlmChunk, LlmConfig, LlmMessage, LlmProvider, ToolCall,
-};
+use hubbub_domain::ports::llm::{LlmChunk, LlmConfig, LlmMessage, LlmProvider, ToolCall};
 use hubbub_llm::{OpenAiCompatAdapter, ProviderConfig};
 
 #[tokio::test]
@@ -64,11 +62,11 @@ async fn test_openai_stream_gemini_thought_signature_preservation() {
     assert_eq!(tool_calls.len(), 1);
     assert_eq!(tool_calls[0].name, "web_search");
     assert_eq!(tool_calls[0].id, "call_gemini_1");
-    let extra = tool_calls[0].extra_content.as_ref().expect("extra_content present");
-    assert_eq!(
-        extra["google"]["thought_signature"],
-        "sig_test_123"
-    );
+    let extra = tool_calls[0]
+        .extra_content
+        .as_ref()
+        .expect("extra_content present");
+    assert_eq!(extra["google"]["thought_signature"], "sig_test_123");
 }
 
 #[tokio::test]
@@ -125,11 +123,11 @@ async fn test_openai_stream_gemini_direct_thought_signature() {
     }
 
     assert_eq!(tool_calls.len(), 1);
-    let extra = tool_calls[0].extra_content.as_ref().expect("extra_content present");
-    assert_eq!(
-        extra["google"]["thought_signature"],
-        "sig_direct_999"
-    );
+    let extra = tool_calls[0]
+        .extra_content
+        .as_ref()
+        .expect("extra_content present");
+    assert_eq!(extra["google"]["thought_signature"], "sig_direct_999");
 }
 
 #[tokio::test]
@@ -206,12 +204,10 @@ async fn test_gemini_request_thought_signature_roundtrip() {
         LlmMessage {
             role: "assistant".to_string(),
             content: String::new(),
-            tool_calls: Some(vec![ToolCall::new(
-                "call_1",
-                "web_search",
-                "{\"query\":\"test\"}",
-            )
-            .with_extra_content(Some(expected_extra))]),
+            tool_calls: Some(vec![
+                ToolCall::new("call_1", "web_search", "{\"query\":\"test\"}")
+                    .with_extra_content(Some(expected_extra)),
+            ]),
             tool_call_id: None,
         },
         LlmMessage {

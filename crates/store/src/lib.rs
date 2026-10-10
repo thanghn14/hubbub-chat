@@ -168,7 +168,9 @@ impl Store for SqliteStore {
 
     // --- Model Quota & Usage ---
 
-    async fn get_model_usage_stats(&self) -> Result<Vec<hubbub_domain::entities::model_quota::ModelUsageStat>, DomainError> {
+    async fn get_model_usage_stats(
+        &self,
+    ) -> Result<Vec<hubbub_domain::entities::model_quota::ModelUsageStat>, DomainError> {
         repositories::model_usage::get_model_usage_stats(&self.pool)
             .await
             .map_err(Into::into)

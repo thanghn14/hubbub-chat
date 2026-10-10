@@ -224,12 +224,7 @@ impl<'a> LlmRunner<'a> {
         Ok(())
     }
 
-    async fn record_step_failure(
-        &self,
-        step: &mut Step,
-        step_start: Instant,
-        err: &AgentError,
-    ) {
+    async fn record_step_failure(&self, step: &mut Step, step_start: Instant, err: &AgentError) {
         step.status = StepStatus::Failed;
         step.duration_ms = Some(step_start.elapsed().as_millis() as u64);
         step.output = Some(serde_json::json!({ "error": err.to_string() }));

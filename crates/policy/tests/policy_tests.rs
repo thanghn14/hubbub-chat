@@ -53,7 +53,7 @@ fn test_url_guard_blocks_ssrf_ipv4_private_and_loopback() {
         "http://192.168.0.254",
         "http://169.254.169.254/latest/meta-data", // AWS / GCP metadata IP
         "http://0.0.0.0:3000",
-        "http://100.64.0.1",                       // Carrier-grade NAT
+        "http://100.64.0.1", // Carrier-grade NAT
     ];
 
     for u in ssrf_urls {
@@ -153,13 +153,16 @@ fn test_permission_checker_network_policy() {
 
     // SearchOnly policy
     assert!(PermissionChecker::check_network("tutor", &NetworkPolicy::SearchOnly, true).is_ok());
-    let err = PermissionChecker::check_network("tutor", &NetworkPolicy::SearchOnly, false).unwrap_err();
+    let err =
+        PermissionChecker::check_network("tutor", &NetworkPolicy::SearchOnly, false).unwrap_err();
     assert!(matches!(err, PolicyError::PermissionDenied { .. }));
 
     // None policy
-    let err_search = PermissionChecker::check_network("librarian", &NetworkPolicy::None, true).unwrap_err();
+    let err_search =
+        PermissionChecker::check_network("librarian", &NetworkPolicy::None, true).unwrap_err();
     assert!(matches!(err_search, PolicyError::PermissionDenied { .. }));
-    let err_fetch = PermissionChecker::check_network("librarian", &NetworkPolicy::None, false).unwrap_err();
+    let err_fetch =
+        PermissionChecker::check_network("librarian", &NetworkPolicy::None, false).unwrap_err();
     assert!(matches!(err_fetch, PolicyError::PermissionDenied { .. }));
 }
 
@@ -183,7 +186,8 @@ fn test_permission_checker_fs_patterns() {
     let err = PermissionChecker::check_fs_write("dev", &permissions, "src/main.rs").unwrap_err();
     assert!(matches!(err, PolicyError::PermissionDenied { .. }));
 
-    let err2 = PermissionChecker::check_fs_write("dev", &permissions, "notes/other.md").unwrap_err();
+    let err2 =
+        PermissionChecker::check_fs_write("dev", &permissions, "notes/other.md").unwrap_err();
     assert!(matches!(err2, PolicyError::PermissionDenied { .. }));
 }
 
@@ -240,4 +244,3 @@ fn test_path_guard_protects_system_files() {
     assert!(PathGuard::check_write_path(root, ".git/config").is_err());
     assert!(PathGuard::check_write_path(root, ".env").is_err());
 }
-

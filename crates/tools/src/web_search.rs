@@ -50,7 +50,11 @@ impl WebSearchTool {
         let mut output = format!("### Kết quả tìm kiếm Web cho: \"{trimmed_query}\"\n\n");
         for (idx, item) in results.iter().take(8).enumerate() {
             let num = idx + 1;
-            let title = if item.title.is_empty() { "Không có tiêu đề" } else { &item.title };
+            let title = if item.title.is_empty() {
+                "Không có tiêu đề"
+            } else {
+                &item.title
+            };
             output.push_str(&format!("{num}. **[{title}]({url})**\n", url = item.url));
             if !item.snippet.is_empty() {
                 output.push_str(&format!("   {}\n", item.snippet.trim()));
@@ -117,7 +121,11 @@ impl WebSearchTool {
         let mut results = Vec::new();
         for (i, (title, url)) in links.into_iter().enumerate() {
             let snippet = snippets.get(i).cloned().unwrap_or_default();
-            results.push(SearchItem { title, url, snippet });
+            results.push(SearchItem {
+                title,
+                url,
+                snippet,
+            });
         }
 
         results

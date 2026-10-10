@@ -98,7 +98,10 @@ async fn test_web_fetch_blocks_ssrf_targets_before_network() {
 
     for target in ssrf_targets {
         let res = tool.fetch(target).await;
-        assert!(res.is_err(), "Expected SSRF block for '{target}', but got Ok");
+        assert!(
+            res.is_err(),
+            "Expected SSRF block for '{target}', but got Ok"
+        );
     }
 }
 
@@ -113,11 +116,19 @@ async fn test_builtin_tool_host_execution() {
 
     // Missing query
     let res_empty = host
-        .execute("web_search", serde_json::json!({ "query": "" }), ctx.clone())
+        .execute(
+            "web_search",
+            serde_json::json!({ "query": "" }),
+            ctx.clone(),
+        )
         .await
         .unwrap();
     assert!(!res_empty.success);
-    assert!(res_empty.content.contains("Lỗi: Tham số 'query' không được để trống"));
+    assert!(
+        res_empty
+            .content
+            .contains("Lỗi: Tham số 'query' không được để trống")
+    );
 
     // Missing url
     let res_no_url = host
@@ -125,11 +136,19 @@ async fn test_builtin_tool_host_execution() {
         .await
         .unwrap();
     assert!(!res_no_url.success);
-    assert!(res_no_url.content.contains("Lỗi: Tham số 'url' không được để trống"));
+    assert!(
+        res_no_url
+            .content
+            .contains("Lỗi: Tham số 'url' không được để trống")
+    );
 
     // SSRF URL execution via host
     let res_ssrf = host
-        .execute("web_fetch", serde_json::json!({ "url": "http://127.0.0.1/admin" }), ctx.clone())
+        .execute(
+            "web_fetch",
+            serde_json::json!({ "url": "http://127.0.0.1/admin" }),
+            ctx.clone(),
+        )
         .await
         .unwrap();
     assert!(!res_ssrf.success);
@@ -153,9 +172,9 @@ fn test_builtin_tool_host_available_tools_schema() {
 
 #[tokio::test]
 async fn test_builtin_tool_host_fs_and_report_tools() {
+    use hubbub_workspace::LocalWorkspaceService;
     use std::sync::Arc;
     use tempfile::tempdir;
-    use hubbub_workspace::LocalWorkspaceService;
 
     let dir = tempdir().unwrap();
     let ws = Arc::new(LocalWorkspaceService::new(dir.path()));
@@ -194,7 +213,11 @@ async fn test_builtin_tool_host_fs_and_report_tools() {
         .unwrap();
     assert!(read_res.success);
     assert!(read_res.content.contains("Báo cáo AI Quốc tế 2026"));
-    assert!(read_res.content.contains("Nội dung báo cáo chi tiết về AI."));
+    assert!(
+        read_res
+            .content
+            .contains("Nội dung báo cáo chi tiết về AI.")
+    );
 
     // 3. report_list
     let list_res = host
@@ -218,10 +241,13 @@ async fn test_builtin_tool_host_fs_and_report_tools() {
 
     // 5. fs_list
     let fs_list_res = host
-        .execute("fs_list", serde_json::json!({ "path": "reports" }), ctx.clone())
+        .execute(
+            "fs_list",
+            serde_json::json!({ "path": "reports" }),
+            ctx.clone(),
+        )
         .await
         .unwrap();
     assert!(fs_list_res.success);
     assert!(fs_list_res.content.contains("reports/ai-report.md"));
 }
-

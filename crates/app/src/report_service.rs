@@ -1,6 +1,6 @@
+use chrono::Utc;
 use std::path::PathBuf;
 use std::sync::Arc;
-use chrono::Utc;
 use uuid::Uuid;
 
 use hubbub_domain::entities::audit_log::AuditLog;
@@ -63,7 +63,11 @@ impl ReportService {
         let filename = match filename_opt {
             Some(f) if !f.trim().is_empty() => {
                 let clean = f.trim().replace(['/', '\\'], "_");
-                if clean.ends_with(".md") { clean } else { format!("{clean}.md") }
+                if clean.ends_with(".md") {
+                    clean
+                } else {
+                    format!("{clean}.md")
+                }
             }
             _ => {
                 let date_str = Utc::now().format("%Y-%m-%d");

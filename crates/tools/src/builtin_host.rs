@@ -1,8 +1,8 @@
 //! Built-in tool host connecting agents to tools.
 
-use std::sync::Arc;
 use async_trait::async_trait;
 use serde_json::Value;
+use std::sync::Arc;
 
 use hubbub_domain::errors::DomainError;
 use hubbub_domain::ports::llm::ToolSchema;
@@ -63,7 +63,11 @@ impl BuiltinToolHost {
     }
 
     async fn exec_web_search(&self, arguments: &Value) -> Result<ToolResult, DomainError> {
-        let query = arguments.get("query").and_then(Value::as_str).unwrap_or("").trim();
+        let query = arguments
+            .get("query")
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .trim();
         if query.is_empty() {
             return Ok(ToolResult {
                 success: false,
@@ -72,13 +76,25 @@ impl BuiltinToolHost {
             });
         }
         match self.web_search.search(query).await {
-            Ok(content) => Ok(ToolResult { success: true, content, metadata: None }),
-            Err(e) => Ok(ToolResult { success: false, content: format!("Lỗi tìm kiếm web: {e}"), metadata: None }),
+            Ok(content) => Ok(ToolResult {
+                success: true,
+                content,
+                metadata: None,
+            }),
+            Err(e) => Ok(ToolResult {
+                success: false,
+                content: format!("Lỗi tìm kiếm web: {e}"),
+                metadata: None,
+            }),
         }
     }
 
     async fn exec_web_fetch(&self, arguments: &Value) -> Result<ToolResult, DomainError> {
-        let url = arguments.get("url").and_then(Value::as_str).unwrap_or("").trim();
+        let url = arguments
+            .get("url")
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .trim();
         if url.is_empty() {
             return Ok(ToolResult {
                 success: false,
@@ -87,8 +103,16 @@ impl BuiltinToolHost {
             });
         }
         match self.web_fetch.fetch(url).await {
-            Ok(content) => Ok(ToolResult { success: true, content, metadata: None }),
-            Err(e) => Ok(ToolResult { success: false, content: format!("Lỗi truy cập trang web: {e}"), metadata: None }),
+            Ok(content) => Ok(ToolResult {
+                success: true,
+                content,
+                metadata: None,
+            }),
+            Err(e) => Ok(ToolResult {
+                success: false,
+                content: format!("Lỗi truy cập trang web: {e}"),
+                metadata: None,
+            }),
         }
     }
 
@@ -97,7 +121,11 @@ impl BuiltinToolHost {
         if let Some(tool) = &self.fs_read {
             let content = tool.read(path).await?;
             let success = !content.starts_with("Lỗi");
-            Ok(ToolResult { success, content, metadata: None })
+            Ok(ToolResult {
+                success,
+                content,
+                metadata: None,
+            })
         } else {
             Ok(ToolResult {
                 success: false,
@@ -112,24 +140,40 @@ impl BuiltinToolHost {
         if let Some(tool) = &self.fs_list {
             let content = tool.list(path).await?;
             let success = !content.starts_with("Lỗi");
-            Ok(ToolResult { success, content, metadata: None })
+            Ok(ToolResult {
+                success,
+                content,
+                metadata: None,
+            })
         } else {
             Ok(ToolResult {
                 success: false,
-                content: "Lỗi: Dịch vụ Workspace chưa được khởi tạo để liệt kê tệp tin.".to_string(),
+                content: "Lỗi: Dịch vụ Workspace chưa được khởi tạo để liệt kê tệp tin."
+                    .to_string(),
                 metadata: None,
             })
         }
     }
 
-    async fn exec_report_write(&self, arguments: &Value, context: &ToolContext) -> Result<ToolResult, DomainError> {
+    async fn exec_report_write(
+        &self,
+        arguments: &Value,
+        context: &ToolContext,
+    ) -> Result<ToolResult, DomainError> {
         let title = arguments.get("title").and_then(Value::as_str).unwrap_or("");
-        let content = arguments.get("content").and_then(Value::as_str).unwrap_or("");
+        let content = arguments
+            .get("content")
+            .and_then(Value::as_str)
+            .unwrap_or("");
         let filename = arguments.get("filename").and_then(Value::as_str);
         if let Some(tool) = &self.report_write {
             let res = tool.write_report(title, content, filename, context).await?;
             let success = !res.starts_with("Lỗi");
-            Ok(ToolResult { success, content: res, metadata: None })
+            Ok(ToolResult {
+                success,
+                content: res,
+                metadata: None,
+            })
         } else {
             Ok(ToolResult {
                 success: false,
@@ -140,11 +184,18 @@ impl BuiltinToolHost {
     }
 
     async fn exec_report_read(&self, arguments: &Value) -> Result<ToolResult, DomainError> {
-        let filename = arguments.get("filename").and_then(Value::as_str).unwrap_or("");
+        let filename = arguments
+            .get("filename")
+            .and_then(Value::as_str)
+            .unwrap_or("");
         if let Some(tool) = &self.report_read {
             let content = tool.read_report(filename).await?;
             let success = !content.starts_with("Lỗi");
-            Ok(ToolResult { success, content, metadata: None })
+            Ok(ToolResult {
+                success,
+                content,
+                metadata: None,
+            })
         } else {
             Ok(ToolResult {
                 success: false,
@@ -158,11 +209,16 @@ impl BuiltinToolHost {
         if let Some(tool) = &self.report_list {
             let content = tool.list_reports().await?;
             let success = !content.starts_with("Lỗi");
-            Ok(ToolResult { success, content, metadata: None })
+            Ok(ToolResult {
+                success,
+                content,
+                metadata: None,
+            })
         } else {
             Ok(ToolResult {
                 success: false,
-                content: "Lỗi: Dịch vụ Workspace chưa được khởi tạo để liệt kê báo cáo.".to_string(),
+                content: "Lỗi: Dịch vụ Workspace chưa được khởi tạo để liệt kê báo cáo."
+                    .to_string(),
                 metadata: None,
             })
         }

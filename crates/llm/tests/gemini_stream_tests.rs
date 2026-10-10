@@ -138,4 +138,3 @@ async fn test_gemini_stream_with_finish_reason_length() -> Result<(), Box<dyn st
     assert_eq!(finish_reason, Some("length".to_string()));
     Ok(())
 }
-

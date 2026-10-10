@@ -1,12 +1,12 @@
 //! Local filesystem implementation of WorkspaceService.
 
+use async_trait::async_trait;
+use chrono::Utc;
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use async_trait::async_trait;
-use chrono::Utc;
-use sha2::{Digest, Sha256};
 use tokio::io::AsyncWriteExt;
 use tokio::sync::RwLock;
 use uuid::Uuid;
@@ -134,7 +134,10 @@ impl WorkspaceService for LocalWorkspaceService {
 
         let temp_filename = format!(
             ".tmp_{}_{}",
-            target.file_name().and_then(|f| f.to_str()).unwrap_or("file"),
+            target
+                .file_name()
+                .and_then(|f| f.to_str())
+                .unwrap_or("file"),
             Uuid::now_v7()
         );
         let temp_path = target
@@ -191,9 +194,7 @@ impl WorkspaceService for LocalWorkspaceService {
             .into());
         }
 
-        let bytes = tokio::fs::read(&target)
-            .await
-            .map_err(WorkspaceError::Io)?;
+        let bytes = tokio::fs::read(&target).await.map_err(WorkspaceError::Io)?;
 
         String::from_utf8(bytes)
             .map_err(|_| WorkspaceError::InvalidUtf8(relative_path.to_string()).into())

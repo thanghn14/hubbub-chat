@@ -1,8 +1,8 @@
 //! Filesystem read tool for agents.
 
-use std::sync::Arc;
 use hubbub_domain::errors::DomainError;
 use hubbub_domain::ports::workspace_service::WorkspaceService;
+use std::sync::Arc;
 
 const MAX_PREVIEW_CHARS: usize = 20_000;
 
@@ -33,7 +33,9 @@ impl FsReadTool {
                 "### Nội dung tệp: `{trimmed}`\n\n```\n{truncated}\n```\n\n[... Đã hiển thị {MAX_PREVIEW_CHARS} / {total} ký tự. Nội dung tệp còn tiếp ...]"
             ))
         } else {
-            Ok(format!("### Nội dung tệp: `{trimmed}`\n\n```\n{content}\n```"))
+            Ok(format!(
+                "### Nội dung tệp: `{trimmed}`\n\n```\n{content}\n```"
+            ))
         }
     }
 }

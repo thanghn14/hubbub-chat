@@ -186,4 +186,3 @@ async fn test_app_service_workspace_and_reports() {
     let content = service.read_report("test-report.md").await.unwrap();
     assert!(content.contains("# Báo cáo Test"));
 }
-

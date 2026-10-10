@@ -3,7 +3,7 @@ use sqlx::{Row, SqlitePool};
 use std::collections::HashSet;
 
 use crate::errors::StoreError;
-use hubbub_domain::entities::model_quota::{get_default_quota_for_model, ModelUsageStat};
+use hubbub_domain::entities::model_quota::{ModelUsageStat, get_default_quota_for_model};
 
 pub async fn get_model_usage_stats(pool: &SqlitePool) -> Result<Vec<ModelUsageStat>, StoreError> {
     let rows = sqlx::query(
@@ -34,7 +34,9 @@ pub async fn get_model_usage_stats(pool: &SqlitePool) -> Result<Vec<ModelUsageSt
     for row in rows {
         let model: Option<String> = row.try_get("model_name")?;
         let Some(model) = model else { continue };
-        if model.is_empty() { continue; }
+        if model.is_empty() {
+            continue;
+        }
 
         let total_prompt: i64 = row.try_get("total_prompt").unwrap_or(0);
         let total_completion: i64 = row.try_get("total_completion").unwrap_or(0);
@@ -82,7 +84,8 @@ pub async fn get_model_usage_stats(pool: &SqlitePool) -> Result<Vec<ModelUsageSt
 
     for default_model in default_seed_models {
         if !seen_models.contains(default_model) {
-            let (provider, rpm_limit, rpd_limit, is_free_tier) = get_default_quota_for_model(default_model);
+            let (provider, rpm_limit, rpd_limit, is_free_tier) =
+                get_default_quota_for_model(default_model);
             result.push(ModelUsageStat {
                 model: default_model.to_string(),
                 provider,
