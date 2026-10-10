@@ -141,3 +141,46 @@ html:not(.dark) .gradient-text-accent {
 .animate-subtle-float {
   animation: subtleFloat 6s infinite ease-in-out;
 }
+
+@keyframes subtleFloatDelayed {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(5px);
+  }
+}
+
+.animate-subtle-float-delayed {
+  animation: subtleFloatDelayed 7s infinite ease-in-out;
+  animation-delay: 1.2s;
+}
+
+@keyframes dashFlow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+.animate-dash-flow {
+  animation: dashFlow 2s linear infinite;
+}
+
+@keyframes pulseBeacon {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+.animate-beacon {
+  animation: pulseBeacon 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.perspective-stage {
+  perspective: 1200px;
+}
