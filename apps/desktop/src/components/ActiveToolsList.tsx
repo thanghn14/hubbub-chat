@@ -13,19 +13,19 @@ export const ActiveToolsList = ({ tools }: ActiveToolsListProps) => {
       {tools.map((tool) => (
         <div
           key={tool.id}
-          className="p-2 bg-zinc-900/60 border border-zinc-800/80 rounded-lg text-[11px] font-mono flex items-center justify-between"
+          className="p-2.5 bg-[#0f121b] border border-white/[0.07] rounded-xl text-[11px] font-mono flex items-center justify-between shadow-xs"
         >
           <div className="flex items-center gap-2">
             {tool.status === 'running' && (
-              <Loader2 className="w-3 h-3 animate-spin text-indigo-400 shrink-0" />
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400 shrink-0" />
             )}
             {tool.status === 'completed' && (
-              <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
             )}
             {tool.status === 'failed' && (
-              <XCircle className="w-3 h-3 text-red-400 shrink-0" />
+              <XCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
             )}
-            <span className="text-zinc-300 font-medium">{tool.name}</span>
+            <span className="text-zinc-200 font-medium">{tool.name}</span>
           </div>
           <span className="text-zinc-400 truncate max-w-xs text-[10px]">
             {tool.summary || tool.preview}

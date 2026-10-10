@@ -34,20 +34,20 @@ export const ActivityDock = ({
   ];
 
   return (
-    <nav className="w-14 bg-[#0a0c12] border-r border-white/5 flex flex-col items-center justify-between py-3.5 select-none shrink-0 z-30">
+    <nav className="w-14 bg-[#07080c] border-r border-white/[0.06] flex flex-col items-center justify-between py-3.5 select-none shrink-0 z-30">
       {/* Top Branding Logo */}
       <div className="flex flex-col items-center gap-4 w-full">
         <div
           title={`Hubbub Multi-Agent v${appVersion}`}
-          className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-500 p-0.5 flex items-center justify-center shadow-lg shadow-indigo-500/20 cursor-default"
+          className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 p-0.5 flex items-center justify-center shadow-lg shadow-indigo-500/25 cursor-default transition-transform hover:scale-105"
         >
-          <div className="w-full h-full bg-[#0a0c12] rounded-[10px] flex items-center justify-center font-bold text-transparent bg-clip-text bg-gradient-to-tr from-indigo-400 to-cyan-300 text-sm">
+          <div className="w-full h-full bg-[#090a0f] rounded-[10px] flex items-center justify-center font-bold text-transparent bg-clip-text bg-gradient-to-tr from-indigo-300 via-white to-cyan-200 text-sm tracking-tight">
             H
           </div>
         </div>
 
         {/* Main Nav Items */}
-        <div className="flex flex-col items-center gap-1.5 w-full px-2 mt-2">
+        <div className="flex flex-col items-center gap-1.5 w-full px-2 mt-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeView === item.id;
@@ -58,13 +58,13 @@ export const ActivityDock = ({
                 title={item.label}
                 className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-all group ${
                   isActive
-                    ? 'bg-indigo-600/15 text-indigo-400 shadow-xs'
-                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
+                    ? 'bg-indigo-600/15 text-indigo-300 border border-indigo-500/30 shadow-xs'
+                    : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.06] border border-transparent'
                 }`}
               >
                 {/* Active Indicator Bar on the left */}
                 {isActive && (
-                  <span className="absolute -left-2 w-1 h-5 rounded-r-full bg-gradient-to-b from-indigo-500 to-cyan-400 shadow-sm" />
+                  <span className="absolute -left-2 w-1 h-5 rounded-r-full bg-gradient-to-b from-indigo-400 to-cyan-400 shadow-sm shadow-indigo-500/50" />
                 )}
                 <Icon className={`w-5 h-5 transition-transform group-hover:scale-105 ${isActive ? 'stroke-[2.2]' : 'stroke-[1.8]'}`} />
               </button>
@@ -78,7 +78,7 @@ export const ActivityDock = ({
         <button
           onClick={onOpenSettings}
           title="Cài đặt API Keys & Hệ thống"
-          className="w-10 h-10 rounded-xl flex items-center justify-center text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-all"
+          className="w-10 h-10 rounded-xl flex items-center justify-center text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.06] border border-transparent transition-all"
         >
           <Settings className="w-4.5 h-4.5 stroke-[1.8]" />
         </button>
@@ -88,14 +88,14 @@ export const ActivityDock = ({
           title={showBenchmark ? 'Quay lại' : 'Benchmark Gate 0'}
           className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
             showBenchmark
-              ? 'bg-amber-500/20 text-amber-400'
-              : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+              : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] border border-transparent'
           }`}
         >
           <Activity className="w-4 h-4" />
         </button>
 
-        <span className="text-[9px] font-mono text-zinc-600 pt-1">
+        <span className="text-[9px] font-mono text-zinc-400 pt-1 tracking-wider">
           v{appVersion.slice(0, 5)}
         </span>
       </div>

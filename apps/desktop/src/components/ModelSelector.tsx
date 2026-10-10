@@ -60,32 +60,32 @@ export const ModelSelector = ({ currentModel, onSelectModel, disabled = false }:
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled || isChanging}
         title="Đổi mô hình LLM chạy tác tử này"
-        className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-zinc-800/80 hover:bg-zinc-800 border border-zinc-700/60 text-[11px] font-mono text-zinc-300 transition-colors disabled:opacity-50"
+        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#121622] hover:bg-[#161c2c] border border-white/[0.08] text-[11px] font-mono text-zinc-300 transition-colors disabled:opacity-50 cursor-pointer"
       >
         <Cpu className="w-3 h-3 text-indigo-400" />
-        <span className="truncate max-w-[130px] font-medium">{currentModel}</span>
+        <span className="truncate max-w-[120px] sm:max-w-[150px] font-medium">{currentModel}</span>
         <ChevronDown className="w-3 h-3 text-zinc-400" />
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 mt-1.5 w-64 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl z-50 p-2 animate-in fade-in zoom-in-95 duration-100">
+        <div className="absolute left-0 mt-1.5 w-68 bg-[#0e111a] border border-white/[0.09] rounded-xl shadow-2xl shadow-black/70 z-50 p-2 animate-fade-in backdrop-blur-xl">
           <div className="text-[10px] font-semibold text-zinc-400 px-2 py-1 uppercase tracking-wider">
             Chọn mô hình cho Agent
           </div>
-          <div className="max-h-60 overflow-y-auto space-y-0.5 my-1 divide-y divide-zinc-800/40">
+          <div className="max-h-60 overflow-y-auto space-y-0.5 my-1 divide-y divide-white/[0.04]">
             {COMMON_MODELS.map((item) => {
               const active = item.id === currentModel;
               return (
                 <button
                   key={item.id}
                   onClick={() => handleSelect(item.id)}
-                  className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors ${
-                    active ? 'bg-indigo-600/20 text-indigo-300 font-medium' : 'text-zinc-300 hover:bg-zinc-800'
+                  className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors cursor-pointer ${
+                    active ? 'bg-indigo-600/20 text-indigo-300 font-medium border border-indigo-500/30' : 'text-zinc-300 hover:bg-white/[0.06] border border-transparent'
                   }`}
                 >
                   <div className="truncate">
                     <div className="truncate">{item.name}</div>
-                    <div className="text-[10px] text-zinc-500 font-mono">{item.provider}</div>
+                    <div className="text-[10px] text-zinc-400 font-mono">{item.provider}</div>
                   </div>
                   {active && <Check className="w-3.5 h-3.5 text-indigo-400 shrink-0" />}
                 </button>
@@ -93,19 +93,19 @@ export const ModelSelector = ({ currentModel, onSelectModel, disabled = false }:
             })}
           </div>
 
-          <div className="pt-2 border-t border-zinc-800/80 flex items-center gap-1.5">
+          <div className="pt-2 border-t border-white/[0.06] flex items-center gap-1.5">
             <input
               type="text"
               placeholder="Nhập tên model khác..."
               value={customModel}
               onChange={(e) => setCustomModel(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSelect(customModel)}
-              className="flex-1 bg-zinc-950 border border-zinc-800 rounded-md px-2 py-1 text-[11px] text-zinc-200 placeholder:text-zinc-600 focus:outline-hidden font-mono"
+              className="flex-1 bg-[#090b10] border border-white/[0.08] rounded-lg px-2.5 py-1 text-[11px] text-zinc-200 placeholder:text-zinc-500 focus:outline-hidden font-mono focus:border-indigo-500/60"
             />
             <button
               onClick={() => handleSelect(customModel)}
               disabled={!customModel.trim()}
-              className="p-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white rounded-md text-xs transition-colors"
+              className="p-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white rounded-lg text-xs transition-colors cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
             </button>

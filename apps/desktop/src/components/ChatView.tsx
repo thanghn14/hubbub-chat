@@ -11,6 +11,7 @@ import {
   Sliders,
   Gauge,
   Trash2,
+  PanelLeft,
 } from 'lucide-react';
 import { ModelSelector } from './ModelSelector';
 import { ChatTurnItem } from './ChatTurnItem';
@@ -31,6 +32,8 @@ interface ChatViewProps {
   onOpenSettings: () => void;
   onOpenAgentDrawer: () => void;
   onOpenQuotaModal: () => void;
+  isSidebarOpen?: boolean;
+  onToggleSidebar?: () => void;
 }
 
 export const ChatView = ({
@@ -48,6 +51,8 @@ export const ChatView = ({
   onOpenSettings,
   onOpenAgentDrawer,
   onOpenQuotaModal,
+  isSidebarOpen = true,
+  onToggleSidebar,
 }: ChatViewProps) => {
   const [input, setInput] = useState('');
   const [isComposing, setIsComposing] = useState(false);
@@ -150,17 +155,27 @@ export const ChatView = ({
       )}
 
       {/* Top Header */}
-      <header className="h-16 border-b border-white/5 px-6 flex items-center justify-between shrink-0 bg-[#0d1017]/85 backdrop-blur-md z-20">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shadow-xs">
-            <Bot className="w-5 h-5" />
+      <header className="h-14 sm:h-16 border-b border-white/[0.06] px-3 sm:px-6 flex items-center justify-between shrink-0 bg-[#0a0c12]/85 backdrop-blur-md z-20">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          {onToggleSidebar && (
+            <button
+              onClick={onToggleSidebar}
+              title={isSidebarOpen ? 'Thu gọn thanh bên' : 'Mở rộng thanh bên'}
+              className="p-1.5 sm:p-2 rounded-xl text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.06] transition-colors cursor-pointer shrink-0"
+            >
+              <PanelLeft className="w-4 h-4" />
+            </button>
+          )}
+
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shadow-xs shrink-0">
+            <Bot className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div>
-            <h2 className="text-sm font-semibold text-zinc-100 truncate max-w-md">
+          <div className="min-w-0">
+            <h2 className="text-xs sm:text-sm font-semibold text-zinc-100 truncate max-w-[160px] sm:max-w-xs md:max-w-md">
               {conversationTitle || 'Cuộc trò chuyện'}
             </h2>
-            <div className="flex items-center gap-2 text-[11px] text-zinc-400">
-              <span className="text-indigo-400 font-medium">{agent?.name || 'AI Assistant'}</span>
+            <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] text-zinc-400 truncate">
+              <span className="text-indigo-400 font-medium truncate">{agent?.name || 'AI Assistant'}</span>
               <span>•</span>
               <ModelSelector
                 currentModel={agent?.model || 'gemini-3.8-flash'}
@@ -172,13 +187,13 @@ export const ChatView = ({
         </div>
 
         {/* Right Header Actions: Skills Badges, Quota Pill, Inspector Button */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Active Skills Badges (Click to inspect) */}
           {agent && (
             <button
               onClick={onOpenAgentDrawer}
               title="Nhấp để xem và cấu hình kỹ năng của Tác tử này"
-              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] text-zinc-300 transition-colors"
+              className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.05] hover:bg-white/[0.09] border border-white/[0.08] text-[11px] text-zinc-300 transition-colors cursor-pointer"
             >
               <Sparkles className="w-3 h-3 text-cyan-400" />
               <span>{agent.tools.builtin.length} Kỹ năng kích hoạt</span>
@@ -189,17 +204,17 @@ export const ChatView = ({
           <button
             onClick={onOpenQuotaModal}
             title="Theo dõi Hạn mức & Sử dụng Model"
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] text-zinc-300 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.05] hover:bg-white/[0.09] border border-white/[0.08] text-[11px] text-zinc-300 transition-colors cursor-pointer"
           >
             <Gauge className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="hidden md:inline">Hạn mức</span>
+            <span className="hidden sm:inline">Hạn mức</span>
           </button>
 
           {/* Agent Inspector Button */}
           <button
             onClick={onOpenAgentDrawer}
             title="Cấu hình Tác tử & Bộ kỹ năng"
-            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white border border-white/5 transition-colors"
+            className="p-1.5 sm:p-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.09] text-zinc-300 hover:text-white border border-white/[0.08] transition-colors cursor-pointer"
           >
             <Sliders className="w-4 h-4" />
           </button>
@@ -207,11 +222,11 @@ export const ChatView = ({
       </header>
 
       {/* Messages Scroll Area */}
-      <div className="flex-1 overflow-y-auto px-5 py-4">
+      <div className="flex-1 overflow-y-auto px-3 sm:px-5 py-4">
         <div className="max-w-4xl mx-auto w-full">
           {completedTurns.length === 0 && !isStreaming ? (
             /* Empty State */
-            <div className="h-[60vh] flex flex-col items-center justify-center text-center p-8 select-none">
+            <div className="min-h-[55vh] flex flex-col items-center justify-center text-center p-4 sm:p-8 select-none">
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600/20 to-cyan-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 mb-4 shadow-xl shadow-indigo-500/10">
                 <Sparkles className="w-7 h-7 text-cyan-400" />
               </div>
@@ -223,18 +238,28 @@ export const ChatView = ({
               </p>
 
               {/* Suggestion Chips */}
-              <div className="flex flex-wrap justify-center gap-2 max-w-lg">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-w-lg w-full">
                 <button
                   onClick={() => setInput('Giải thích trực quan về cơ chế mượn (Borrowing & Ownership) trong Rust')}
-                  className="px-3.5 py-2 bg-[#121622] hover:bg-[#161b2a] border border-white/5 hover:border-white/15 rounded-xl text-xs text-zinc-300 transition-all text-left"
+                  className="p-3 bg-[#11141e] hover:bg-[#151926] border border-white/[0.07] hover:border-indigo-500/30 rounded-xl text-xs text-zinc-300 transition-all text-left shadow-xs cursor-pointer group"
                 >
-                  💡 Cơ chế Ownership trong Rust
+                  <span className="font-medium text-zinc-200 group-hover:text-indigo-300 block mb-0.5">
+                    💡 Cơ chế Ownership trong Rust
+                  </span>
+                  <span className="text-[11px] text-zinc-400 block line-clamp-1">
+                    Hiểu sâu về bộ nhớ an toàn và borrow checker
+                  </span>
                 </button>
                 <button
                   onClick={() => setInput('Tìm kiếm thông tin mới nhất và tổng hợp báo cáo về Tauri 2')}
-                  className="px-3.5 py-2 bg-[#121622] hover:bg-[#161b2a] border border-white/5 hover:border-white/15 rounded-xl text-xs text-zinc-300 transition-all text-left"
+                  className="p-3 bg-[#11141e] hover:bg-[#151926] border border-white/[0.07] hover:border-indigo-500/30 rounded-xl text-xs text-zinc-300 transition-all text-left shadow-xs cursor-pointer group"
                 >
-                  🌐 Tìm kiếm & tổng hợp thông tin về Tauri 2
+                  <span className="font-medium text-zinc-200 group-hover:text-cyan-300 block mb-0.5">
+                    🌐 Tổng hợp báo cáo về Tauri 2
+                  </span>
+                  <span className="text-[11px] text-zinc-400 block line-clamp-1">
+                    Thu thập tính năng mới và xuất báo cáo markdown
+                  </span>
                 </button>
               </div>
             </div>
@@ -272,33 +297,33 @@ export const ChatView = ({
 
       {/* Error Banner */}
       {errorMsg && (
-        <div className="mx-6 mb-3 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl flex items-center justify-between text-xs text-rose-300 animate-fade-in">
+        <div className="mx-3 sm:mx-6 mb-3 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl flex items-center justify-between text-xs text-rose-300 animate-fade-in">
           <div className="flex items-center gap-2.5 min-w-0">
             <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
             <span className="leading-relaxed break-words">{errorMsg}</span>
           </div>
           <button
             onClick={onOpenSettings}
-            className="px-3 py-1 bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-500/30 rounded-lg text-[11px] font-medium transition-colors shrink-0 ml-3"
+            className="px-3 py-1 bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-500/30 rounded-lg text-[11px] font-medium transition-colors shrink-0 ml-3 cursor-pointer"
           >
             Cài đặt API Key
           </button>
         </div>
       )}
 
-      {/* Floating Modern Composer (LobeChat Style) */}
-      <footer className="p-4 bg-gradient-to-t from-[#08090d] via-[#08090d]/95 to-transparent shrink-0">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-[#10141e]/90 hover:bg-[#121622] border border-white/10 focus-within:border-indigo-500/70 rounded-2xl transition-all shadow-xl shadow-black/40 p-2 flex flex-col gap-1.5 backdrop-blur-md">
+      {/* Modern Cursor-style Composer */}
+      <footer className="p-2 sm:p-4 bg-gradient-to-t from-[#08090d] via-[#08090d]/95 to-transparent shrink-0">
+        <div className="max-w-4xl mx-auto w-full">
+          <div className="bg-[#10131d]/95 hover:bg-[#121622] border border-white/[0.08] focus-within:border-indigo-500/60 focus-within:ring-2 focus-within:ring-indigo-500/15 rounded-2xl transition-all shadow-2xl shadow-black/60 p-2 sm:p-2.5 flex flex-col gap-1.5 backdrop-blur-xl">
             {/* Top Composer Chip: Active Agent & Skills */}
             <div className="flex items-center justify-between px-2 pt-1 text-[11px] text-zinc-400 select-none">
               <div className="flex items-center gap-2">
-                <span className="flex items-center gap-1 text-indigo-400 font-medium">
+                <span className="flex items-center gap-1.5 text-indigo-400 font-medium">
                   <Sparkles className="w-3 h-3 text-cyan-400" />
                   {agent?.name || 'Tác tử'}
                 </span>
                 <span className="text-zinc-600">•</span>
-                <span className="text-zinc-500 font-mono text-[10px]">
+                <span className="text-zinc-400 font-mono text-[10px]">
                   {agent?.model}
                 </span>
               </div>
@@ -306,7 +331,7 @@ export const ChatView = ({
                 <button
                   onClick={() => setInput('')}
                   title="Xóa nội dung nhập"
-                  className="text-zinc-500 hover:text-zinc-300 transition-colors p-0.5"
+                  className="text-zinc-400 hover:text-zinc-200 transition-colors p-0.5 cursor-pointer"
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>
@@ -324,14 +349,14 @@ export const ChatView = ({
                 onCompositionStart={() => setIsComposing(true)}
                 onCompositionEnd={() => setIsComposing(false)}
                 placeholder={`Nhắn tin với ${agent?.name || 'Hubbub'}... (Enter để gửi, Shift+Enter xuống dòng)`}
-                className="flex-1 bg-transparent border-0 resize-none px-1 py-1.5 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-hidden min-h-[38px] max-h-[180px] leading-relaxed"
+                className="flex-1 bg-transparent border-0 resize-none px-1 py-1.5 text-xs text-zinc-100 placeholder:text-zinc-400 focus:outline-hidden min-h-[38px] max-h-[180px] leading-relaxed"
               />
 
               {isStreaming ? (
                 <button
                   onClick={onCancelRun}
                   title="Dừng sinh phản hồi"
-                  className="p-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold transition-all flex items-center justify-center shrink-0 shadow-md shadow-rose-600/25 active:scale-95"
+                  className="p-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold transition-all flex items-center justify-center shrink-0 shadow-md shadow-rose-600/25 active:scale-95 cursor-pointer"
                 >
                   <Square className="w-4 h-4 fill-current" />
                 </button>
@@ -340,7 +365,7 @@ export const ChatView = ({
                   onClick={handleSend}
                   disabled={!input.trim()}
                   title="Gửi tin nhắn (Enter)"
-                  className="p-2.5 bg-gradient-to-tr from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 disabled:opacity-30 disabled:hover:from-indigo-600 disabled:hover:to-indigo-500 text-white rounded-xl text-xs font-semibold transition-all flex items-center justify-center shrink-0 shadow-md shadow-indigo-600/25 active:scale-95 cursor-pointer disabled:cursor-not-allowed"
+                  className="p-2.5 bg-gradient-to-tr from-indigo-600 via-indigo-500 to-indigo-600 hover:brightness-110 disabled:opacity-30 text-white rounded-xl text-xs font-semibold transition-all flex items-center justify-center shrink-0 shadow-md shadow-indigo-600/25 active:scale-95 cursor-pointer disabled:cursor-not-allowed inner-top-glow"
                 >
                   <Send className="w-4 h-4" />
                 </button>

@@ -135,37 +135,37 @@ export const WorkspaceReportsView = ({ onBackToChat }: WorkspaceReportsViewProps
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-zinc-950 text-zinc-100 select-none overflow-hidden">
+    <div className="flex-1 flex flex-col h-full bg-[#08090d] text-zinc-100 select-none overflow-hidden">
       {/* Top Header */}
-      <div className="h-14 border-b border-zinc-800/80 px-6 flex items-center justify-between bg-zinc-900/40">
-        <div className="flex items-center gap-4">
+      <div className="h-14 sm:h-16 border-b border-white/[0.06] px-4 sm:px-6 flex items-center justify-between bg-[#0a0c12]/85 backdrop-blur-md">
+        <div className="flex items-center gap-3 sm:gap-4">
           <button
             onClick={onBackToChat}
-            className="text-xs text-zinc-400 hover:text-zinc-200 flex items-center gap-1.5 transition-colors"
+            className="text-xs text-zinc-400 hover:text-zinc-200 flex items-center gap-1.5 transition-colors cursor-pointer"
           >
-            ← Quay lại Trò chuyện
+            ← Quay lại
           </button>
-          <div className="h-4 w-px bg-zinc-800" />
-          <div className="flex items-center gap-1.5 p-1 bg-zinc-900 rounded-lg border border-zinc-800">
+          <div className="h-4 w-px bg-white/[0.08]" />
+          <div className="flex items-center gap-1 p-1 bg-[#11141e] rounded-xl border border-white/[0.07]">
             <button
               onClick={() => setActiveTab('reports')}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+              className={`px-3 py-1 text-xs font-medium rounded-lg transition-all cursor-pointer ${
                 activeTab === 'reports'
-                  ? 'bg-indigo-600 text-white shadow-xs'
+                  ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-xs'
                   : 'text-zinc-400 hover:text-zinc-200'
               }`}
             >
               <FileText className="w-3.5 h-3.5 inline mr-1.5" />
-              Kho Báo cáo & Tài liệu
+              Kho Báo cáo
             </button>
             <button
               onClick={() => {
                 setActiveTab('audit');
                 loadAuditLogs();
               }}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+              className={`px-3 py-1 text-xs font-medium rounded-lg transition-all cursor-pointer ${
                 activeTab === 'audit'
-                  ? 'bg-indigo-600 text-white shadow-xs'
+                  ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-xs'
                   : 'text-zinc-400 hover:text-zinc-200'
               }`}
             >
@@ -188,7 +188,7 @@ export const WorkspaceReportsView = ({ onBackToChat }: WorkspaceReportsViewProps
               else loadAuditLogs();
             }}
             title="Làm mới"
-            className="p-1.5 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg transition-colors"
+            className="p-1.5 text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] rounded-xl transition-colors cursor-pointer"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
@@ -199,9 +199,9 @@ export const WorkspaceReportsView = ({ onBackToChat }: WorkspaceReportsViewProps
       {activeTab === 'reports' ? (
         <div className="flex-1 flex overflow-hidden">
           {/* Left: Files / Documents Explorer */}
-          <div className="w-80 border-r border-zinc-800/80 bg-zinc-900/30 flex flex-col shrink-0">
+          <div className="w-72 sm:w-80 border-r border-white/[0.06] bg-[#0a0c12] flex flex-col shrink-0">
             {/* Search Bar */}
-            <div className="p-3 border-b border-zinc-800/60 flex items-center gap-2">
+            <div className="p-3 border-b border-white/[0.06] flex items-center gap-2">
               <div className="relative flex-1">
                 <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-2.5" />
                 <input
@@ -212,13 +212,13 @@ export const WorkspaceReportsView = ({ onBackToChat }: WorkspaceReportsViewProps
                     setSearchQuery(e.target.value);
                     loadDocuments(e.target.value);
                   }}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors"
+                  className="w-full bg-[#10131d] border border-white/[0.07] rounded-xl pl-8 pr-3 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-hidden focus:border-indigo-500/60 transition-colors"
                 />
               </div>
               <button
                 onClick={() => setIsCreating(true)}
                 title="Tạo báo cáo mới"
-                className="p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors shrink-0"
+                className="p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition-colors shrink-0 cursor-pointer shadow-xs"
               >
                 <Plus className="w-3.5 h-3.5" />
               </button>
@@ -273,10 +273,10 @@ export const WorkspaceReportsView = ({ onBackToChat }: WorkspaceReportsViewProps
                     <button
                       key={doc.id}
                       onClick={() => handleSelectFile(doc.path)}
-                      className={`w-full text-left p-2.5 rounded-lg text-xs transition-colors flex items-start gap-2.5 ${
+                      className={`w-full text-left p-2.5 rounded-xl text-xs transition-colors flex items-start gap-2.5 cursor-pointer ${
                         active
-                          ? 'bg-indigo-600/15 border border-indigo-500/30 text-indigo-200'
-                          : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/60'
+                          ? 'bg-[#151926] border border-indigo-500/35 text-indigo-200 shadow-xs inner-top-glow'
+                          : 'text-zinc-300 hover:text-zinc-100 hover:bg-white/[0.04] border border-transparent'
                       }`}
                     >
                       <FileText className={`w-4 h-4 mt-0.5 shrink-0 ${active ? 'text-indigo-400' : 'text-zinc-400'}`} />
@@ -304,10 +304,10 @@ export const WorkspaceReportsView = ({ onBackToChat }: WorkspaceReportsViewProps
                     <button
                       key={filename}
                       onClick={() => handleSelectFile(filename)}
-                      className={`w-full text-left p-2.5 rounded-lg text-xs transition-colors flex items-center gap-2.5 ${
+                      className={`w-full text-left p-2.5 rounded-xl text-xs transition-colors flex items-center gap-2.5 cursor-pointer ${
                         active
-                          ? 'bg-indigo-600/15 border border-indigo-500/30 text-indigo-200'
-                          : 'text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/60'
+                          ? 'bg-[#151926] border border-indigo-500/35 text-indigo-200 shadow-xs inner-top-glow'
+                          : 'text-zinc-300 hover:text-zinc-100 hover:bg-white/[0.04] border border-transparent'
                       }`}
                     >
                       <FileText className="w-4 h-4 text-zinc-400 shrink-0" />
@@ -320,11 +320,11 @@ export const WorkspaceReportsView = ({ onBackToChat }: WorkspaceReportsViewProps
           </div>
 
           {/* Right: Markdown Preview / Milkdown WYSIWYG Editor */}
-          <div className="flex-1 flex flex-col bg-zinc-950 overflow-hidden">
+          <div className="flex-1 flex flex-col bg-[#08090d] overflow-hidden">
             {selectedFile ? (
               <>
                 {/* File Header Actions */}
-                <div className="h-12 border-b border-zinc-800/80 px-6 flex items-center justify-between bg-zinc-900/20">
+                <div className="h-12 border-b border-white/[0.06] px-4 sm:px-6 flex items-center justify-between bg-[#0a0c12]/60">
                   <div className="flex items-center gap-2 truncate">
                     <FileText className="w-4 h-4 text-indigo-400 shrink-0" />
                     <span className="text-xs font-semibold text-zinc-200 truncate">{selectedFile}</span>
@@ -333,10 +333,10 @@ export const WorkspaceReportsView = ({ onBackToChat }: WorkspaceReportsViewProps
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setIsEditing(!isEditing)}
-                      className={`px-3 py-1 text-xs font-medium rounded-lg border flex items-center gap-1.5 transition-colors ${
+                      className={`px-3 py-1.5 text-xs font-medium rounded-xl border flex items-center gap-1.5 transition-colors cursor-pointer ${
                         isEditing
-                          ? 'bg-zinc-800 border-zinc-700 text-zinc-200'
-                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                          ? 'bg-[#151926] border-indigo-500/40 text-indigo-200'
+                          : 'bg-[#10131d] border-white/[0.08] text-zinc-400 hover:text-zinc-200'
                       }`}
                     >
                       {isEditing ? (
@@ -353,7 +353,7 @@ export const WorkspaceReportsView = ({ onBackToChat }: WorkspaceReportsViewProps
                     {isEditing && (
                       <button
                         onClick={handleSaveReport}
-                        className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors shadow-xs"
+                        className="px-3.5 py-1.5 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white rounded-xl text-xs font-medium flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer inner-top-glow"
                       >
                         <Save className="w-3.5 h-3.5" /> Lưu báo cáo
                       </button>
@@ -362,7 +362,7 @@ export const WorkspaceReportsView = ({ onBackToChat }: WorkspaceReportsViewProps
                 </div>
 
                 {/* Content Viewer / Editor */}
-                <div className="flex-1 overflow-y-auto p-8 max-w-4xl mx-auto w-full select-text">
+                <div className="flex-1 overflow-y-auto p-4 sm:p-8 max-w-4xl mx-auto w-full select-text">
                   {isEditing ? (
                     <MilkdownEditor
                       key={selectedFile}

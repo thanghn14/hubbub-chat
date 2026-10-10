@@ -62,18 +62,18 @@ export const ModelQuotaModal = ({ isOpen, onClose }: ModelQuotaModalProps) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-fade-in select-none">
-      <div className="bg-[#0e111a] border border-white/10 rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-3 sm:p-4 animate-fade-in select-none">
+      <div className="bg-[#0e111a] border border-white/[0.09] rounded-2xl w-full max-w-xl md:max-w-3xl max-h-[85vh] flex flex-col shadow-2xl shadow-black/80 overflow-hidden inner-top-glow">
         {/* Header */}
-        <div className="p-4.5 border-b border-white/10 bg-[#121622]/80 flex items-center justify-between">
+        <div className="p-4 sm:p-4.5 border-b border-white/[0.07] bg-[#121622]/80 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-600 to-indigo-600 p-0.5 shadow-md shadow-cyan-600/20">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-600 to-indigo-600 p-0.5 shadow-md shadow-cyan-600/20 shrink-0">
               <div className="w-full h-full bg-[#0a0c12] rounded-[10px] flex items-center justify-center text-cyan-400">
                 <Gauge className="w-5 h-5" />
               </div>
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-zinc-100 flex items-center gap-2">
+              <h2 className="text-sm sm:text-base font-semibold text-zinc-100 flex items-center gap-2">
                 <span>Theo dõi Hạn mức & Mức sử dụng Model</span>
               </h2>
               <p className="text-[11px] text-zinc-400">
@@ -81,18 +81,18 @@ export const ModelQuotaModal = ({ isOpen, onClose }: ModelQuotaModalProps) => {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               onClick={fetchStats}
               disabled={isLoading}
               title="Cập nhật dữ liệu mới nhất"
-              className="p-1.5 text-zinc-400 hover:text-zinc-200 hover:bg-white/5 rounded-lg transition-colors"
+              className="p-1.5 text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] rounded-xl transition-colors cursor-pointer"
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 text-zinc-400 hover:text-zinc-200 hover:bg-white/5 rounded-lg transition-colors"
+              className="p-1.5 text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] rounded-xl transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -100,9 +100,9 @@ export const ModelQuotaModal = ({ isOpen, onClose }: ModelQuotaModalProps) => {
         </div>
 
         {/* Global Overview Metrics */}
-        <div className="grid grid-cols-3 gap-3 p-4 bg-[#0a0c12]/60 border-b border-white/5">
-          <div className="p-3 bg-[#131722] rounded-xl border border-white/5 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 p-3.5 sm:p-4 bg-[#0a0c12]/60 border-b border-white/[0.06]">
+          <div className="p-3 bg-[#131722] rounded-xl border border-white/[0.06] flex items-center gap-3 inner-top-glow">
+            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center shrink-0">
               <Cpu className="w-4 h-4" />
             </div>
             <div>
@@ -113,8 +113,8 @@ export const ModelQuotaModal = ({ isOpen, onClose }: ModelQuotaModalProps) => {
             </div>
           </div>
 
-          <div className="p-3 bg-[#131722] rounded-xl border border-white/5 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center">
+          <div className="p-3 bg-[#131722] rounded-xl border border-white/[0.06] flex items-center gap-3 inner-top-glow">
+            <div className="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center shrink-0">
               <Zap className="w-4 h-4" />
             </div>
             <div>
@@ -125,8 +125,8 @@ export const ModelQuotaModal = ({ isOpen, onClose }: ModelQuotaModalProps) => {
             </div>
           </div>
 
-          <div className="p-3 bg-[#131722] rounded-xl border border-white/5 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+          <div className="p-3 bg-[#131722] rounded-xl border border-white/[0.06] flex items-center gap-3 inner-top-glow">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
               <Coins className="w-4 h-4" />
             </div>
             <div>
@@ -229,13 +229,13 @@ export const ModelQuotaModal = ({ isOpen, onClose }: ModelQuotaModalProps) => {
         </div>
 
         {/* Footer */}
-        <div className="p-3.5 border-t border-white/10 bg-[#121622]/80 flex items-center justify-between text-xs text-zinc-400">
-          <span className="text-[11px]">
+        <div className="p-3.5 sm:p-4 border-t border-white/[0.07] bg-[#121622]/90 flex items-center justify-between text-xs text-zinc-400">
+          <span className="text-[11px] truncate max-w-sm">
             Hạn mức được tự động đối chiếu theo bảng định mức kỹ thuật của Google, Anthropic, OpenAI & Groq.
           </span>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-xl text-xs font-medium transition-colors"
+            className="px-4 py-1.5 bg-white/[0.06] hover:bg-white/[0.1] text-zinc-200 rounded-xl text-xs font-medium transition-colors cursor-pointer"
           >
             Đóng
           </button>

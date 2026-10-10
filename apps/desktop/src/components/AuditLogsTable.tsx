@@ -16,27 +16,27 @@ export const AuditLogsTable = ({ auditLogs }: AuditLogsTableProps) => {
   });
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden p-6 max-w-5xl mx-auto w-full">
-      <div className="flex items-center justify-between mb-4">
+    <div className="flex-1 flex flex-col overflow-hidden p-4 sm:p-6 max-w-5xl mx-auto w-full">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <div>
-          <h2 className="text-sm font-semibold text-zinc-200">Nhật ký kiểm toán bảo mật (Audit Logs)</h2>
+          <h2 className="text-sm font-semibold text-zinc-100">Nhật ký kiểm toán bảo mật (Audit Logs)</h2>
           <p className="text-xs text-zinc-400">
             Ghi nhận mọi lượt thực thi công cụ (Tool execution) của các Agent, gồm cả hành động được cho phép và bị từ chối.
           </p>
         </div>
 
-        <div className="flex items-center gap-1.5 p-1 bg-zinc-900 rounded-lg border border-zinc-800">
+        <div className="flex items-center gap-1 p-1 bg-[#10131d] rounded-xl border border-white/[0.07] self-start sm:self-auto">
           <button
             onClick={() => setAuditFilter('all')}
-            className={`px-2.5 py-1 text-xs rounded font-medium transition-colors ${
-              auditFilter === 'all' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-400 hover:text-zinc-200'
+            className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-colors cursor-pointer ${
+              auditFilter === 'all' ? 'bg-[#181d2c] text-zinc-100 shadow-xs' : 'text-zinc-400 hover:text-zinc-200'
             }`}
           >
             Tất cả ({auditLogs.length})
           </button>
           <button
             onClick={() => setAuditFilter('allow')}
-            className={`px-2.5 py-1 text-xs rounded font-medium transition-colors ${
+            className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-colors cursor-pointer ${
               auditFilter === 'allow'
                 ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800/60'
                 : 'text-zinc-400 hover:text-zinc-200'
@@ -46,7 +46,7 @@ export const AuditLogsTable = ({ auditLogs }: AuditLogsTableProps) => {
           </button>
           <button
             onClick={() => setAuditFilter('deny')}
-            className={`px-2.5 py-1 text-xs rounded font-medium transition-colors ${
+            className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-colors cursor-pointer ${
               auditFilter === 'deny'
                 ? 'bg-rose-950/80 text-rose-300 border border-rose-800/60'
                 : 'text-zinc-400 hover:text-zinc-200'
@@ -57,8 +57,8 @@ export const AuditLogsTable = ({ auditLogs }: AuditLogsTableProps) => {
         </div>
       </div>
 
-      <div className="flex-1 bg-zinc-900/60 border border-zinc-800/80 rounded-xl overflow-hidden flex flex-col">
-        <div className="overflow-y-auto flex-1 divide-y divide-zinc-800/60">
+      <div className="flex-1 bg-[#0c0e16] border border-white/[0.07] rounded-2xl overflow-hidden flex flex-col shadow-lg shadow-black/30">
+        <div className="overflow-y-auto flex-1 divide-y divide-white/[0.05]">
           {filteredLogs.length === 0 ? (
             <div className="p-8 text-center text-xs text-zinc-400">Chưa có bản ghi kiểm toán nào phù hợp.</div>
           ) : (

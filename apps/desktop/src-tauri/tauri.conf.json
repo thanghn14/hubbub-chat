@@ -15,8 +15,8 @@
         "title": "Hubbub — Personal AI Workspace (Gate 0 Spike)",
         "width": 1280,
         "height": 850,
-        "minWidth": 900,
-        "minHeight": 600,
+        "minWidth": 700,
+        "minHeight": 500,
         "resizable": true,
         "fullscreen": false
       }

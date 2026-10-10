@@ -33,6 +33,9 @@ export default function App() {
   const isSendingRef = useRef(false);
 
   // Modals & Panels
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
+    return typeof window !== 'undefined' ? window.innerWidth >= 900 : true;
+  });
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [isQuotaModalOpen, setIsQuotaModalOpen] = useState<boolean>(false);
   const [isAgentModalOpen, setIsAgentModalOpen] = useState<boolean>(false);
@@ -284,8 +287,8 @@ export default function App() {
         appVersion={appVersion}
       />
 
-      {/* 2. Secondary Sidebar (260px) - Visible in Chat view */}
-      {activeNavView === 'chat' && (
+      {/* 2. Secondary Sidebar (256px) - Visible in Chat view when toggled open */}
+      {activeNavView === 'chat' && isSidebarOpen && (
         <Sidebar
           conversations={conversations}
           activeId={activeConversationId}
@@ -294,6 +297,7 @@ export default function App() {
           agents={agents}
           selectedAgentId={selectedAgentId}
           onSelectAgent={(agentId: string) => setSelectedAgentId(agentId)}
+          onToggleCollapse={() => setIsSidebarOpen(false)}
         />
       )}
 
@@ -318,6 +322,8 @@ export default function App() {
               setIsAgentDrawerOpen(true);
             }}
             onOpenQuotaModal={() => setIsQuotaModalOpen(true)}
+            isSidebarOpen={isSidebarOpen}
+            onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
           />
         )}
 

@@ -51,7 +51,7 @@ export const ChatTurnItem = ({
       {/* 1. User Message (Box message on the right) */}
       {turn.userMessage && (
         <div className="flex justify-end my-3 group">
-          <div className="bg-[#181d29] hover:bg-[#1b2232] text-zinc-100 border border-white/10 rounded-2xl rounded-tr-xs px-4 py-2.5 max-w-2xl shadow-xs transition-colors relative">
+          <div className="bg-[#141824] hover:bg-[#171b29] text-zinc-100 border border-white/[0.08] rounded-2xl rounded-tr-xs px-4 py-2.5 max-w-[90%] sm:max-w-2xl shadow-lg shadow-black/20 transition-colors relative inner-top-glow">
             <div className="whitespace-pre-wrap select-text text-xs leading-relaxed font-normal">
               {userText}
             </div>
@@ -65,7 +65,7 @@ export const ChatTurnItem = ({
               <button
                 onClick={() => handleCopy(userText)}
                 title="Sao chép câu hỏi"
-                className="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-zinc-200 transition-opacity p-0.5 rounded"
+                className="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-zinc-200 transition-opacity p-0.5 rounded cursor-pointer"
               >
                 <Copy className="w-3 h-3" />
               </button>
@@ -76,19 +76,19 @@ export const ChatTurnItem = ({
 
       {/* 2. Unified Assistant Turn (Single Cohesive Block) */}
       {(turn.finalText || turn.toolSteps.length > 0 || isStreaming) && (
-        <div className="w-full flex gap-3.5 my-4">
+        <div className="w-full flex gap-3 sm:gap-3.5 my-4">
           {/* Avatar */}
-          <div className="w-8 h-8 rounded-xl shrink-0 flex items-center justify-center text-xs font-semibold select-none bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 shadow-xs mt-0.5">
-            <Sparkles className={`w-4 h-4 text-cyan-400 ${isStreaming ? 'animate-pulse' : ''}`} />
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl shrink-0 flex items-center justify-center text-xs font-semibold select-none bg-gradient-to-tr from-indigo-500/15 to-cyan-500/15 border border-indigo-500/25 text-indigo-400 shadow-xs mt-0.5">
+            <Sparkles className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400 ${isStreaming ? 'animate-pulse' : ''}`} />
           </div>
 
           <div className="flex-1 min-w-0">
             {/* Header: Agent Name, Model, Time */}
-            <div className="flex items-center gap-2 mb-2 select-none">
-              <span className="text-xs font-semibold text-zinc-200">
+            <div className="flex items-center gap-2 mb-2 select-none flex-wrap">
+              <span className="text-xs font-semibold text-zinc-100">
                 {agent?.name || 'AI Assistant'}
               </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 border border-white/5 text-zinc-400 font-mono">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/[0.07] text-zinc-400 font-mono">
                 {agent?.model || 'gemini-3.8-flash'}
               </span>
               <span className="text-[10px] text-zinc-400 font-mono">
@@ -113,11 +113,11 @@ export const ChatTurnItem = ({
                   return (
                     <div
                       key={tool.id}
-                      className="border border-white/5 bg-[#10141e]/70 rounded-xl overflow-hidden text-xs transition-colors"
+                      className="border border-white/[0.07] bg-[#0f121b]/80 rounded-xl overflow-hidden text-xs transition-colors"
                     >
                       <button
                         onClick={() => toggleToolExpand(tool.id)}
-                        className="w-full px-3 py-2 flex items-center justify-between hover:bg-white/5 transition-colors text-left"
+                        className="w-full px-3 py-2 flex items-center justify-between hover:bg-white/[0.04] transition-colors text-left cursor-pointer"
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           {tool.status === 'running' ? (
@@ -128,11 +128,11 @@ export const ChatTurnItem = ({
                             <AlertCircle className="w-3.5 h-3.5 text-red-400 shrink-0" />
                           )}
                           <Wrench className="w-3 h-3 text-indigo-400 shrink-0" />
-                          <span className="font-mono text-[11px] text-zinc-300 font-medium">
+                          <span className="font-mono text-[11px] text-zinc-300 font-medium truncate">
                             {tool.toolName}
                           </span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-zinc-400 text-[10px]">
+                        <div className="flex items-center gap-1.5 text-zinc-400 text-[10px] shrink-0">
                           <span>{tool.status === 'running' ? 'Đang chạy' : tool.status === 'completed' ? 'Hoàn thành' : 'Thất bại'}</span>
                           {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                         </div>
@@ -180,7 +180,7 @@ export const ChatTurnItem = ({
                 <button
                   onClick={() => handleCopy(turn.finalText)}
                   title="Sao chép toàn bộ phản hồi"
-                  className="px-2.5 py-1 bg-white/5 hover:bg-white/10 text-[11px] text-zinc-400 hover:text-zinc-200 rounded-lg border border-white/5 flex items-center gap-1.5 transition-colors"
+                  className="px-2.5 py-1 bg-white/[0.04] hover:bg-white/[0.08] text-[11px] text-zinc-400 hover:text-zinc-200 rounded-xl border border-white/[0.07] flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
                   <span>{copied ? 'Đã sao chép' : 'Sao chép'}</span>
@@ -189,7 +189,7 @@ export const ChatTurnItem = ({
                 <button
                   onClick={() => onSaveAsReport(turn.finalText)}
                   title="Lưu câu trả lời vào thư mục reports/ trong Workspace"
-                  className="px-2.5 py-1 bg-white/5 hover:bg-white/10 text-[11px] text-zinc-400 hover:text-zinc-200 rounded-lg border border-white/5 flex items-center gap-1.5 transition-colors"
+                  className="px-2.5 py-1 bg-white/[0.04] hover:bg-white/[0.08] text-[11px] text-zinc-400 hover:text-zinc-200 rounded-xl border border-white/[0.07] flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <FileText className="w-3 h-3 text-indigo-400" />
                   <span>Lưu thành Báo cáo</span>

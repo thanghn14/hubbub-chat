@@ -94,12 +94,12 @@ export const AgentModal = ({ isOpen, onClose, onSaveAgent, existingAgent }: Agen
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-fade-in select-none">
-      <div className="bg-[#0e111a] border border-white/10 rounded-2xl w-full max-w-xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-3 sm:p-4 animate-fade-in select-none">
+      <div className="bg-[#0e111a] border border-white/[0.09] rounded-2xl w-full max-w-xl max-h-[85vh] flex flex-col shadow-2xl shadow-black/80 overflow-hidden inner-top-glow">
         {/* Header */}
-        <div className="flex items-center justify-between p-4.5 border-b border-white/10 bg-[#121622]/80">
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-white/[0.07] bg-[#121622]/80">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+            <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shadow-xs">
               <Bot className="w-4 h-4" />
             </div>
             <div>
@@ -113,14 +113,14 @@ export const AgentModal = ({ isOpen, onClose, onSaveAgent, existingAgent }: Agen
           </div>
           <button
             onClick={onClose}
-            className="text-zinc-400 hover:text-zinc-200 p-1.5 rounded-lg hover:bg-white/5 transition-colors"
+            className="text-zinc-400 hover:text-zinc-200 p-1.5 rounded-xl hover:bg-white/[0.06] transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Form Body */}
-        <div className="p-5 overflow-y-auto space-y-4 text-xs">
+        <div className="p-4 sm:p-5 overflow-y-auto space-y-4 text-xs">
           {/* Agent Name */}
           <div>
             <label className="block font-medium text-zinc-200 mb-1">Tên Tác tử (Chức năng nhiệm vụ)</label>
@@ -129,18 +129,18 @@ export const AgentModal = ({ isOpen, onClose, onSaveAgent, existingAgent }: Agen
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ví dụ: Chuyên gia DevOps, Dịch thuật Đa ngữ, Reviewer Mã Nguồn..."
-              className="w-full bg-zinc-950 border border-zinc-800 focus:border-indigo-500 rounded-lg px-3 py-2 text-zinc-100 placeholder:text-zinc-600 focus:outline-hidden"
+              className="w-full bg-[#080a10] border border-white/[0.08] focus:border-indigo-500/60 rounded-xl px-3 py-2 text-zinc-100 placeholder:text-zinc-500 focus:outline-hidden"
             />
           </div>
 
           {/* Model Selection */}
           <div>
             <label className="block font-medium text-zinc-200 mb-1">Mô hình AI vận hành (Model)</label>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <select
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
-                className="flex-1 bg-zinc-950 border border-zinc-800 focus:border-indigo-500 rounded-lg px-3 py-2 text-zinc-100 focus:outline-hidden font-mono"
+                className="flex-1 bg-[#080a10] border border-white/[0.08] focus:border-indigo-500/60 rounded-xl px-3 py-2 text-zinc-100 focus:outline-hidden font-mono text-xs"
               >
                 {POPULAR_MODELS.map((m) => (
                   <option key={m} value={m}>
@@ -153,7 +153,7 @@ export const AgentModal = ({ isOpen, onClose, onSaveAgent, existingAgent }: Agen
                 placeholder="Hoặc tự gõ tên model..."
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
-                className="w-44 bg-zinc-950 border border-zinc-800 focus:border-indigo-500 rounded-lg px-3 py-2 text-zinc-100 placeholder:text-zinc-600 focus:outline-hidden font-mono"
+                className="w-full sm:w-48 bg-[#080a10] border border-white/[0.08] focus:border-indigo-500/60 rounded-xl px-3 py-2 text-zinc-100 placeholder:text-zinc-500 focus:outline-hidden font-mono text-xs"
               />
             </div>
           </div>
@@ -168,7 +168,7 @@ export const AgentModal = ({ isOpen, onClose, onSaveAgent, existingAgent }: Agen
               value={systemPrompt}
               onChange={(e) => setSystemPrompt(e.target.value)}
               placeholder="Mô tả chi tiết nhiệm vụ, phong cách trả lời và kiến thức chuyên sâu của tác tử này..."
-              className="w-full bg-zinc-950 border border-zinc-800 focus:border-indigo-500 rounded-lg px-3 py-2 text-zinc-100 placeholder:text-zinc-600 focus:outline-hidden leading-relaxed"
+              className="w-full bg-[#080a10] border border-white/[0.08] focus:border-indigo-500/60 rounded-xl px-3 py-2 text-zinc-100 placeholder:text-zinc-500 focus:outline-hidden leading-relaxed resize-y"
             />
           </div>
 
@@ -178,24 +178,24 @@ export const AgentModal = ({ isOpen, onClose, onSaveAgent, existingAgent }: Agen
               <Wrench className="w-3.5 h-3.5 text-indigo-400" />
               Công cụ cho phép tác tử sử dụng
             </label>
-            <div className="grid grid-cols-1 gap-1.5 p-2 bg-zinc-950/70 border border-zinc-800/80 rounded-lg">
+            <div className="grid grid-cols-1 gap-1.5 p-2 bg-[#080a10] border border-white/[0.06] rounded-xl">
               {AVAILABLE_TOOLS.map((tool) => {
                 const checked = selectedTools.includes(tool.id);
                 return (
                   <label
                     key={tool.id}
                     onClick={() => toggleTool(tool.id)}
-                    className="flex items-center gap-2 p-1.5 hover:bg-zinc-900 rounded-md cursor-pointer select-none"
+                    className="flex items-center gap-2 p-1.5 hover:bg-white/[0.04] rounded-lg cursor-pointer select-none transition-colors"
                   >
                     <div
-                      className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
-                        checked ? 'bg-indigo-600 border-indigo-500 text-white' : 'border-zinc-700 bg-zinc-900'
+                      className={`w-4 h-4 rounded-md border flex items-center justify-center transition-colors ${
+                        checked ? 'bg-indigo-600 border-indigo-500 text-white' : 'border-white/[0.12] bg-[#121622]'
                       }`}
                     >
                       {checked && <Check className="w-3 h-3 stroke-[3]" />}
                     </div>
                     <span className="text-zinc-300 font-mono text-[11px] font-semibold">{tool.id}</span>
-                    <span className="text-zinc-400 text-[11px]">— {tool.label}</span>
+                    <span className="text-zinc-400 text-[11px] truncate">— {tool.label}</span>
                   </label>
                 );
               })}
@@ -204,17 +204,17 @@ export const AgentModal = ({ isOpen, onClose, onSaveAgent, existingAgent }: Agen
         </div>
 
         {/* Footer */}
-        <div className="p-3 border-t border-zinc-800 bg-zinc-900/80 flex items-center justify-end gap-2">
+        <div className="p-3.5 sm:p-4 border-t border-white/[0.07] bg-[#121622]/90 flex items-center justify-end gap-2.5">
           <button
             onClick={onClose}
-            className="px-3.5 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs font-medium transition-colors"
+            className="px-3.5 py-1.5 bg-white/[0.05] hover:bg-white/[0.08] text-zinc-300 rounded-xl text-xs font-medium border border-white/[0.06] transition-colors cursor-pointer"
           >
             Hủy
           </button>
           <button
             onClick={handleSave}
             disabled={isSaving || !name.trim()}
-            className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5"
+            className="px-4 py-1.5 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 disabled:opacity-40 text-white rounded-xl text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer inner-top-glow shadow-xs"
           >
             {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
             Lưu Tác tử

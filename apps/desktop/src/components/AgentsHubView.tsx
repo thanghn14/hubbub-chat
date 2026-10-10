@@ -67,9 +67,9 @@ export const AgentsHubView = ({
   return (
     <div className="flex-1 flex flex-col h-full bg-[#08090d] overflow-hidden select-none">
       {/* Top Header */}
-      <header className="h-16 border-b border-white/5 px-6 flex items-center justify-between shrink-0 bg-[#0d1017]/80 backdrop-blur-md">
+      <header className="py-3 px-4 sm:px-6 border-b border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 bg-[#0a0c12]/85 backdrop-blur-md">
         <div>
-          <h2 className="text-base font-bold text-zinc-100 flex items-center gap-2">
+          <h2 className="text-sm sm:text-base font-bold text-zinc-100 flex items-center gap-2">
             <span>Trung tâm Tác tử & Kỹ năng (Agents & Skills Hub)</span>
           </h2>
           <p className="text-[11px] text-zinc-400">
@@ -79,7 +79,7 @@ export const AgentsHubView = ({
 
         <button
           onClick={onOpenCreateAgent}
-          className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-600/20 flex items-center gap-1.5 transition-all"
+          className="self-start sm:self-auto px-4 py-2 bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 hover:brightness-110 active:scale-[0.98] text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-600/25 flex items-center gap-1.5 transition-all cursor-pointer inner-top-glow"
         >
           <Plus className="w-4 h-4" />
           <span>Tạo Tác tử Mới</span>
@@ -87,19 +87,19 @@ export const AgentsHubView = ({
       </header>
 
       {/* Grid of Agent Cards */}
-      <div className="flex-1 overflow-y-auto p-6">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
           {agents.map((agent) => {
             return (
               <div
                 key={agent.id}
-                className="bg-[#10141e]/70 hover:bg-[#121622] border border-white/5 hover:border-white/15 rounded-2xl p-5 flex flex-col justify-between transition-all group shadow-sm hover:shadow-xl hover:shadow-black/40"
+                className="cursor-card rounded-2xl p-5 flex flex-col justify-between transition-all group"
               >
                 <div>
                   {/* Card Header: Icon + Name + Model */}
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:scale-105 transition-transform">
+                      <div className="w-10 h-10 rounded-xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
                         {getAgentIcon(agent.id)}
                       </div>
                       <div>
@@ -112,7 +112,7 @@ export const AgentsHubView = ({
                       </div>
                     </div>
 
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 border border-white/5 text-zinc-400 font-mono">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/[0.07] text-zinc-400 font-mono">
                       {agent.model}
                     </span>
                   </div>
@@ -124,7 +124,7 @@ export const AgentsHubView = ({
 
                   {/* Skills / Tools Badges */}
                   <div className="mb-4">
-                    <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">
+                    <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block mb-1.5">
                       Công cụ & Kỹ năng ({agent.tools.builtin.length})
                     </span>
                     <div className="flex flex-wrap gap-1.5">
@@ -134,7 +134,7 @@ export const AgentsHubView = ({
                         return (
                           <span
                             key={toolId}
-                            className={`text-[10px] px-2 py-0.5 rounded-md border flex items-center gap-1 font-medium ${badge.color}`}
+                            className={`text-[10px] px-2 py-0.5 rounded-lg border flex items-center gap-1 font-medium ${badge.color}`}
                           >
                             <Icon className="w-2.5 h-2.5" />
                             <span>{badge.label}</span>
@@ -146,10 +146,10 @@ export const AgentsHubView = ({
                 </div>
 
                 {/* Card Footer Actions */}
-                <div className="pt-3 border-t border-white/5 flex items-center justify-between gap-2">
+                <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between gap-2">
                   <button
                     onClick={() => onOpenAgentDrawer(agent)}
-                    className="flex-1 py-1.5 px-3 bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-zinc-100 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
+                    className="flex-1 py-1.5 px-3 bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 hover:text-zinc-100 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 border border-white/[0.06] transition-colors cursor-pointer"
                   >
                     <Sliders className="w-3.5 h-3.5 text-zinc-400" />
                     <span>Cấu hình & Skills</span>
@@ -157,7 +157,7 @@ export const AgentsHubView = ({
 
                   <button
                     onClick={() => onSelectAgentForChat(agent.id)}
-                    className="py-1.5 px-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 transition-colors shadow-xs"
+                    className="py-1.5 px-3.5 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer inner-top-glow"
                   >
                     <MessageSquare className="w-3.5 h-3.5" />
                     <span>Chat</span>
