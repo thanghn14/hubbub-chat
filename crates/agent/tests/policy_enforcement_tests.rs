@@ -10,7 +10,7 @@ use hubbub_domain::entities::conversation::MessageRole;
 use hubbub_domain::entities::run::{RunStatus, StepStatus};
 use hubbub_domain::ports::store::Store;
 use hubbub_store::SqliteStore;
-use hubbub_testkit::{create_test_agent, FakeLlm, InMemoryEventSink, MockToolHost};
+use hubbub_testkit::{FakeLlm, InMemoryEventSink, MockToolHost, create_test_agent};
 
 #[tokio::test]
 async fn test_agent_blocked_from_network_when_policy_none() {
@@ -75,7 +75,10 @@ async fn test_agent_blocked_from_network_when_policy_none() {
 
     // Verify tool result message in store
     let messages = store.list_messages(conv_id, 10, 0).await.unwrap();
-    let tool_msg = messages.iter().find(|m| m.role == MessageRole::Tool).unwrap();
+    let tool_msg = messages
+        .iter()
+        .find(|m| m.role == MessageRole::Tool)
+        .unwrap();
     let parts_str = serde_json::to_string(&tool_msg.parts).unwrap();
     assert!(parts_str.contains("Chính sách bảo mật từ chối"));
 }
@@ -180,7 +183,12 @@ async fn test_agent_blocked_from_ssrf_metadata_ip() {
 
     let conv_id = Uuid::now_v7();
     let run = runtime
-        .execute_run(conv_id, &agent, Some("Lấy metadata"), CancellationToken::new())
+        .execute_run(
+            conv_id,
+            &agent,
+            Some("Lấy metadata"),
+            CancellationToken::new(),
+        )
         .await
         .unwrap();
 

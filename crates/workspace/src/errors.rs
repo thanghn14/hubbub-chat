@@ -1,7 +1,7 @@
 //! Error types for workspace operations.
 
-use thiserror::Error;
 use hubbub_domain::errors::DomainError;
+use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum WorkspaceError {
@@ -35,13 +35,15 @@ impl From<WorkspaceError> for DomainError {
                 id: path,
             },
             WorkspaceError::Policy(p) => DomainError::PermissionDenied(p.to_string()),
-            WorkspaceError::ProtectedPath(p) => DomainError::PermissionDenied(format!("Protected path: '{p}'")),
-            WorkspaceError::FileTooLarge { actual, max } => DomainError::Validation(format!(
-                "File too large ({actual} bytes > {max} bytes)"
-            )),
-            WorkspaceError::InvalidUtf8(path) => DomainError::Validation(format!(
-                "File '{path}' is not valid UTF-8"
-            )),
+            WorkspaceError::ProtectedPath(p) => {
+                DomainError::PermissionDenied(format!("Protected path: '{p}'"))
+            }
+            WorkspaceError::FileTooLarge { actual, max } => {
+                DomainError::Validation(format!("File too large ({actual} bytes > {max} bytes)"))
+            }
+            WorkspaceError::InvalidUtf8(path) => {
+                DomainError::Validation(format!("File '{path}' is not valid UTF-8"))
+            }
             WorkspaceError::Watcher(msg) => DomainError::Internal(format!("Watcher error: {msg}")),
             WorkspaceError::Io(e) => DomainError::Internal(format!("I/O error: {e}")),
         }

@@ -88,7 +88,10 @@ impl AppService {
         let vault = Arc::new(KeyringVault::new("hubbub"));
 
         let workspace = Arc::new(LocalWorkspaceService::new(&config.workspace_dir));
-        let tool_host = Arc::new(BuiltinToolHost::with_workspace(workspace.clone(), Some(store.clone())));
+        let tool_host = Arc::new(BuiltinToolHost::with_workspace(
+            workspace.clone(),
+            Some(store.clone()),
+        ));
         let reports = Arc::new(ReportService::new(workspace.clone(), store.clone()));
 
         let agents_path = data_dir.join("agents.json");
@@ -107,7 +110,10 @@ impl AppService {
         }
 
         // Migrate legacy analyst name if present
-        if let Some(analyst) = map.get_mut("analyst").filter(|a| a.name == "Gemini Analyst") {
+        if let Some(analyst) = map
+            .get_mut("analyst")
+            .filter(|a| a.name == "Gemini Analyst")
+        {
             analyst.name = "Chuyên viên Phân tích".to_string();
         }
 
@@ -225,7 +231,9 @@ impl AppService {
             if let Some(agent) = map.get_mut(agent_id) {
                 agent.model = model.to_string();
             } else {
-                return Err(AppError::NotFound(format!("Không tìm thấy agent: {agent_id}")));
+                return Err(AppError::NotFound(format!(
+                    "Không tìm thấy agent: {agent_id}"
+                )));
             }
         }
         let _ = self.save_agents_to_disk().await;
@@ -288,7 +296,9 @@ impl AppService {
         } else if agent.model.starts_with("gemini") {
             "gemini"
         } else if agent.model.starts_with("llama") {
-            if self.has_provider_key("groq").await.unwrap_or(false) && agent.model.contains("versatile") {
+            if self.has_provider_key("groq").await.unwrap_or(false)
+                && agent.model.contains("versatile")
+            {
                 "groq"
             } else {
                 "ollama"

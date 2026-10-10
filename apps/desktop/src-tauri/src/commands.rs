@@ -95,14 +95,8 @@ pub async fn set_agent_model(
 
 /// Tauri IPC command: create or update an agent.
 #[tauri::command]
-pub async fn upsert_agent(
-    agent: Agent,
-    service: State<'_, Arc<AppService>>,
-) -> Result<(), String> {
-    service
-        .upsert_agent(agent)
-        .await
-        .map_err(|e| e.to_string())
+pub async fn upsert_agent(agent: Agent, service: State<'_, Arc<AppService>>) -> Result<(), String> {
+    service.upsert_agent(agent).await.map_err(|e| e.to_string())
 }
 
 /// Tauri IPC command: delete an agent.
@@ -178,9 +172,7 @@ pub async fn cancel_run(run_id: Uuid, service: State<'_, Arc<AppService>>) -> Re
 
 /// Tauri IPC command: list all reports in the workspace.
 #[tauri::command]
-pub async fn list_reports(
-    service: State<'_, Arc<AppService>>,
-) -> Result<Vec<String>, String> {
+pub async fn list_reports(service: State<'_, Arc<AppService>>) -> Result<Vec<String>, String> {
     service.list_reports().await.map_err(|e| e.to_string())
 }
 
@@ -190,14 +182,15 @@ pub async fn read_report(
     filename: String,
     service: State<'_, Arc<AppService>>,
 ) -> Result<String, String> {
-    service.read_report(&filename).await.map_err(|e| e.to_string())
+    service
+        .read_report(&filename)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 /// Tauri IPC command: list indexed workspace documents.
 #[tauri::command]
-pub async fn list_documents(
-    service: State<'_, Arc<AppService>>,
-) -> Result<Vec<Document>, String> {
+pub async fn list_documents(service: State<'_, Arc<AppService>>) -> Result<Vec<Document>, String> {
     service.list_documents().await.map_err(|e| e.to_string())
 }
 
@@ -207,7 +200,10 @@ pub async fn search_documents(
     query: String,
     service: State<'_, Arc<AppService>>,
 ) -> Result<Vec<Document>, String> {
-    service.search_documents(&query).await.map_err(|e| e.to_string())
+    service
+        .search_documents(&query)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 /// Tauri IPC command: write a report into workspace reports/.
@@ -241,7 +237,8 @@ pub async fn list_audit_logs(
 pub async fn get_model_usage_stats(
     service: State<'_, Arc<AppService>>,
 ) -> Result<Vec<ModelUsageStat>, String> {
-    service.get_model_usage_stats().await.map_err(|e| e.to_string())
+    service
+        .get_model_usage_stats()
+        .await
+        .map_err(|e| e.to_string())
 }
-
-

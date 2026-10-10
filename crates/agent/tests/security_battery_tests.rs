@@ -10,7 +10,7 @@ use hubbub_domain::entities::agent::{AgentPermissions, NetworkPolicy};
 use hubbub_domain::ports::store::Store;
 use hubbub_policy::{PathGuard, UrlGuard};
 use hubbub_store::SqliteStore;
-use hubbub_testkit::{create_test_agent, FakeLlm, InMemoryEventSink};
+use hubbub_testkit::{FakeLlm, InMemoryEventSink, create_test_agent};
 use hubbub_tools::BuiltinToolHost;
 use hubbub_workspace::LocalWorkspaceService;
 
@@ -82,11 +82,18 @@ async fn test_prompt_injection_simulation_blocked_and_audited() {
         .await
         .unwrap();
 
-    assert_eq!(run.status, hubbub_domain::entities::run::RunStatus::Completed);
+    assert_eq!(
+        run.status,
+        hubbub_domain::entities::run::RunStatus::Completed
+    );
 
     // Verify audit logs recorded the policy denial decisions
     let audit_logs = store.list_audit_logs(10).await.unwrap();
-    assert_eq!(audit_logs.len(), 2, "Both malicious tool calls must be logged");
+    assert_eq!(
+        audit_logs.len(),
+        2,
+        "Both malicious tool calls must be logged"
+    );
 
     let denied_tools: Vec<(&str, &str)> = audit_logs
         .iter()

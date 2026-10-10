@@ -64,7 +64,9 @@ impl PathGuard {
             if trimmed == "." {
                 return Ok(workspace_root.to_path_buf());
             }
-            return Err(PolicyError::InvalidPath("Path resolves to empty".to_string()));
+            return Err(PolicyError::InvalidPath(
+                "Path resolves to empty".to_string(),
+            ));
         }
 
         let mut resolved = workspace_root.to_path_buf();
@@ -102,7 +104,9 @@ impl PathGuard {
             return Err(PolicyError::PermissionDenied {
                 agent_id: "system".to_string(),
                 operation: "fs_write".to_string(),
-                reason: format!("Writing to protected path '{relative_path}' is strictly forbidden"),
+                reason: format!(
+                    "Writing to protected path '{relative_path}' is strictly forbidden"
+                ),
             });
         }
         Ok(resolved)

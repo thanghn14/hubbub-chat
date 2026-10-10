@@ -42,7 +42,9 @@ impl<'a> ToolRunner<'a> {
 
         self.emit_tool_start(&tc.name, &tc.arguments).await?;
 
-        let tool_step = self.create_initial_step(run_id, step_idx, args_val.clone()).await?;
+        let tool_step = self
+            .create_initial_step(run_id, step_idx, args_val.clone())
+            .await?;
 
         let tool_context = ToolContext {
             agent_id: agent.id.clone(),
@@ -54,14 +56,17 @@ impl<'a> ToolRunner<'a> {
             .dispatch_tool(agent, &tc.name, args_val, tool_context, cancellation_token)
             .await?;
 
-        self.record_audit(run_id, &tc.name, &tc.arguments, decision, &content).await;
+        self.record_audit(run_id, &tc.name, &tc.arguments, decision, &content)
+            .await;
 
         let elapsed = tool_step_start.elapsed().as_millis() as u64;
-        self.finish_step(tool_step, success, elapsed, &content).await?;
+        self.finish_step(tool_step, success, elapsed, &content)
+            .await?;
 
         self.emit_tool_finished(&tc.name, success, &content).await?;
 
-        self.persist_tool_message(conversation_id, run_id, &tc.id, &content).await?;
+        self.persist_tool_message(conversation_id, run_id, &tc.id, &content)
+            .await?;
 
         Ok(LlmMessage {
             role: "tool".to_string(),
@@ -101,9 +106,24 @@ impl<'a> ToolRunner<'a> {
         }
     }
 
-    async fn record_audit(&self, run_id: Uuid, tool: &str, args: &str, decision: &str, result: &str) {
-        let args_digest = if args.len() > 200 { format!("{}...", &args[..200]) } else { args.to_string() };
-        let result_digest = if result.len() > 200 { Some(format!("{}...", &result[..200])) } else { Some(result.to_string()) };
+    async fn record_audit(
+        &self,
+        run_id: Uuid,
+        tool: &str,
+        args: &str,
+        decision: &str,
+        result: &str,
+    ) {
+        let args_digest = if args.len() > 200 {
+            format!("{}...", &args[..200])
+        } else {
+            args.to_string()
+        };
+        let result_digest = if result.len() > 200 {
+            Some(format!("{}...", &result[..200]))
+        } else {
+            Some(result.to_string())
+        };
 
         let entry = AuditLog {
             id: Uuid::now_v7(),
@@ -118,18 +138,47 @@ impl<'a> ToolRunner<'a> {
     }
 
     async fn emit_tool_start(&self, name: &str, args: &str) -> Result<(), AgentError> {
-        let preview = if args.len() > 100 { format!("{}...", &args[..100]) } else { args.to_string() };
-        self.event_sink.emit(RunEvent::ToolStarted { tool_name: name.to_string(), args_preview: preview }).await?;
+        let preview = if args.len() > 100 {
+            format!("{}...", &args[..100])
+        } else {
+            args.to_string()
+        };
+        self.event_sink
+            .emit(RunEvent::ToolStarted {
+                tool_name: name.to_string(),
+                args_preview: preview,
+            })
+            .await?;
         Ok(())
     }
 
-    async fn emit_tool_finished(&self, name: &str, success: bool, content: &str) -> Result<(), AgentError> {
-        let summary = if content.len() > 100 { format!("{}...", &content[..100]) } else { content.to_string() };
-        self.event_sink.emit(RunEvent::ToolFinished { tool_name: name.to_string(), success, summary }).await?;
+    async fn emit_tool_finished(
+        &self,
+        name: &str,
+        success: bool,
+        content: &str,
+    ) -> Result<(), AgentError> {
+        let summary = if content.len() > 100 {
+            format!("{}...", &content[..100])
+        } else {
+            content.to_string()
+        };
+        self.event_sink
+            .emit(RunEvent::ToolFinished {
+                tool_name: name.to_string(),
+                success,
+                summary,
+            })
+            .await?;
         Ok(())
     }
 
-    async fn create_initial_step(&self, run_id: Uuid, step_idx: u32, input: Value) -> Result<Step, AgentError> {
+    async fn create_initial_step(
+        &self,
+        run_id: Uuid,
+        step_idx: u32,
+        input: Value,
+    ) -> Result<Step, AgentError> {
         let step = Step {
             id: Uuid::now_v7(),
             run_id,
@@ -145,15 +194,31 @@ impl<'a> ToolRunner<'a> {
         Ok(step)
     }
 
-    async fn finish_step(&self, mut step: Step, success: bool, duration_ms: u64, content: &str) -> Result<(), AgentError> {
-        step.status = if success { StepStatus::Completed } else { StepStatus::Failed };
+    async fn finish_step(
+        &self,
+        mut step: Step,
+        success: bool,
+        duration_ms: u64,
+        content: &str,
+    ) -> Result<(), AgentError> {
+        step.status = if success {
+            StepStatus::Completed
+        } else {
+            StepStatus::Failed
+        };
         step.duration_ms = Some(duration_ms);
         step.output = Some(Value::String(content.to_string()));
         let _ = self.store.create_step(&step).await;
         Ok(())
     }
 
-    async fn persist_tool_message(&self, conv_id: Uuid, run_id: Uuid, call_id: &str, content: &str) -> Result<(), AgentError> {
+    async fn persist_tool_message(
+        &self,
+        conv_id: Uuid,
+        run_id: Uuid,
+        call_id: &str,
+        content: &str,
+    ) -> Result<(), AgentError> {
         let tool_msg = Message {
             id: Uuid::now_v7(),
             conversation_id: conv_id,

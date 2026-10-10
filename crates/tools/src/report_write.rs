@@ -1,12 +1,12 @@
 //! Report writing tool for saving markdown research reports to reports/.
 
-use std::sync::Arc;
 use chrono::Utc;
-use uuid::Uuid;
 use hubbub_domain::errors::DomainError;
 use hubbub_domain::ports::store::Store;
 use hubbub_domain::ports::tool_host::ToolContext;
 use hubbub_domain::ports::workspace_service::WorkspaceService;
+use std::sync::Arc;
+use uuid::Uuid;
 
 pub struct ReportWriteTool {
     workspace: Arc<dyn WorkspaceService>,
@@ -33,7 +33,11 @@ impl ReportWriteTool {
         let filename = match filename_opt {
             Some(f) if !f.trim().is_empty() => {
                 let clean = f.trim().replace(['/', '\\'], "_");
-                if clean.ends_with(".md") { clean } else { format!("{clean}.md") }
+                if clean.ends_with(".md") {
+                    clean
+                } else {
+                    format!("{clean}.md")
+                }
             }
             _ => {
                 let date_str = Utc::now().format("%Y-%m-%d");
@@ -50,7 +54,11 @@ impl ReportWriteTool {
             content.to_string()
         };
 
-        if let Err(e) = self.workspace.write_file(&relative_path, &final_content).await {
+        if let Err(e) = self
+            .workspace
+            .write_file(&relative_path, &final_content)
+            .await
+        {
             return Ok(format!("Lỗi khi lưu báo cáo vào '{relative_path}': {e}"));
         }
 
@@ -76,7 +84,10 @@ impl ReportWriteTool {
         for ch in title.chars() {
             if ch.is_alphanumeric() {
                 slug.push(ch.to_ascii_lowercase());
-            } else if (ch == ' ' || ch == '-' || ch == '_') && !slug.ends_with('-') && !slug.is_empty() {
+            } else if (ch == ' ' || ch == '-' || ch == '_')
+                && !slug.ends_with('-')
+                && !slug.is_empty()
+            {
                 slug.push('-');
             }
         }

@@ -1,8 +1,8 @@
 //! Report listing tool for listing all markdown reports in reports/.
 
-use std::sync::Arc;
 use hubbub_domain::errors::DomainError;
 use hubbub_domain::ports::workspace_service::WorkspaceService;
+use std::sync::Arc;
 
 pub struct ReportListTool {
     workspace: Arc<dyn WorkspaceService>,
@@ -24,7 +24,10 @@ impl ReportListTool {
             return Ok("Thư mục `reports/` hiện chưa có báo cáo nào.".to_string());
         }
 
-        let mut output = format!("### Danh sách Báo cáo trong Workspace (tổng cộng: {} báo cáo):\n\n", md_reports.len());
+        let mut output = format!(
+            "### Danh sách Báo cáo trong Workspace (tổng cộng: {} báo cáo):\n\n",
+            md_reports.len()
+        );
         for r in md_reports {
             let filename = r.strip_prefix("reports/").unwrap_or(&r);
             output.push_str(&format!("- `{filename}` (Đường dẫn: `{r}`)\n"));

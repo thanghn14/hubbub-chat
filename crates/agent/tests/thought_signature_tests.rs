@@ -78,11 +78,17 @@ async fn test_agent_runtime_preserves_thought_signature_in_store_and_context() {
         if let MessagePart::ToolCall { extra_content, .. } = part {
             assert!(extra_content.is_some());
             let val = extra_content.as_ref().unwrap();
-            assert_eq!(val["google"]["thought_signature"], "sig_cryptographic_test_888");
+            assert_eq!(
+                val["google"]["thought_signature"],
+                "sig_cryptographic_test_888"
+            );
             found_saved_sig = true;
         }
     }
-    assert!(found_saved_sig, "MessagePart::ToolCall must contain thought_signature");
+    assert!(
+        found_saved_sig,
+        "MessagePart::ToolCall must contain thought_signature"
+    );
 
     // 2. Verify ContextBuilder reconstructs ToolCall with extra_content
     let context_messages = ContextBuilder::build(&agent, &messages, None);

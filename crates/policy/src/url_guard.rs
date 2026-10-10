@@ -15,8 +15,8 @@ impl UrlGuard {
             return Err(PolicyError::InvalidUrl("URL cannot be empty".to_string()));
         }
 
-        let parsed = Url::parse(trimmed)
-            .map_err(|e| PolicyError::InvalidUrl(format!("{e}: {trimmed}")))?;
+        let parsed =
+            Url::parse(trimmed).map_err(|e| PolicyError::InvalidUrl(format!("{e}: {trimmed}")))?;
 
         let scheme = parsed.scheme();
         if scheme != "http" && scheme != "https" {
@@ -46,7 +46,9 @@ impl UrlGuard {
                 }
             }
             None => {
-                return Err(PolicyError::InvalidUrl(format!("Missing host in URL: {trimmed}")));
+                return Err(PolicyError::InvalidUrl(format!(
+                    "Missing host in URL: {trimmed}"
+                )));
             }
         }
 

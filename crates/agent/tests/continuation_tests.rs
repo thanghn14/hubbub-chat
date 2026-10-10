@@ -10,9 +10,7 @@ use hubbub_domain::entities::run::RunStatus;
 use hubbub_domain::ports::llm::{LlmChunk, LlmUsage};
 use hubbub_domain::ports::store::Store;
 use hubbub_store::SqliteStore;
-use hubbub_testkit::{
-    create_test_agent, FakeLlm, FakeResponse, InMemoryEventSink, MockToolHost,
-};
+use hubbub_testkit::{FakeLlm, FakeResponse, InMemoryEventSink, MockToolHost, create_test_agent};
 
 #[tokio::test]
 async fn test_automatic_continuation_on_length_truncation() {
@@ -25,7 +23,9 @@ async fn test_automatic_continuation_on_length_truncation() {
     fake_llm
         .push_response(FakeResponse {
             chunks: vec![
-                Ok(LlmChunk::Delta("Đây là phần đầu của câu trả lời dài và bị ngắt ở đâ".to_string())),
+                Ok(LlmChunk::Delta(
+                    "Đây là phần đầu của câu trả lời dài và bị ngắt ở đâ".to_string(),
+                )),
                 Ok(LlmChunk::Usage(LlmUsage {
                     prompt_tokens: 20,
                     completion_tokens: 15,
@@ -41,7 +41,9 @@ async fn test_automatic_continuation_on_length_truncation() {
     fake_llm
         .push_response(FakeResponse {
             chunks: vec![
-                Ok(LlmChunk::Delta("y, nhưng sau đó tự động tiếp tục cho đến khi kết thúc hoàn chỉnh.".to_string())),
+                Ok(LlmChunk::Delta(
+                    "y, nhưng sau đó tự động tiếp tục cho đến khi kết thúc hoàn chỉnh.".to_string(),
+                )),
                 Ok(LlmChunk::Usage(LlmUsage {
                     prompt_tokens: 35,
                     completion_tokens: 20,

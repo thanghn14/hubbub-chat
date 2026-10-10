@@ -23,7 +23,10 @@ async fn test_agent_executes_report_write_and_fs_read() {
     let ws_dir = tempdir().unwrap();
     let ws = Arc::new(LocalWorkspaceService::new(ws_dir.path()));
     let store = Arc::new(SqliteStore::open_in_memory().await.unwrap());
-    let host = Arc::new(BuiltinToolHost::with_workspace(ws.clone(), Some(store.clone())));
+    let host = Arc::new(BuiltinToolHost::with_workspace(
+        ws.clone(),
+        Some(store.clone()),
+    ));
     let sink = Arc::new(InMemoryEventSink::new());
 
     let agent = Agent {
@@ -93,7 +96,9 @@ async fn test_agent_executes_report_write_and_fs_read() {
     fake_llm
         .push_response(FakeResponse {
             chunks: vec![
-                Ok(LlmChunk::Delta("Tôi đã lưu xong báo cáo vào hệ thống.".to_string())),
+                Ok(LlmChunk::Delta(
+                    "Tôi đã lưu xong báo cáo vào hệ thống.".to_string(),
+                )),
                 Ok(LlmChunk::Done),
             ],
             chunk_delay: None,
@@ -118,7 +123,10 @@ async fn test_agent_executes_report_write_and_fs_read() {
         .await
         .unwrap();
 
-    assert_eq!(run.status, hubbub_domain::entities::run::RunStatus::Completed);
+    assert_eq!(
+        run.status,
+        hubbub_domain::entities::run::RunStatus::Completed
+    );
 
     // Verify file exists on disk
     let report_content = ws.read_file("reports/auto-test.md").await.unwrap();

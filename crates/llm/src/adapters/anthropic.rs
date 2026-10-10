@@ -3,7 +3,7 @@ use serde_json::Value;
 use std::collections::VecDeque;
 
 use crate::config::ProviderConfig;
-use crate::errors::{extract_retry_delay, format_api_error, LlmError};
+use crate::errors::{LlmError, extract_retry_delay, format_api_error};
 use crate::sse::SseEventReader;
 use hubbub_domain::errors::DomainError;
 use hubbub_domain::ports::llm::{
@@ -125,8 +125,9 @@ impl LlmProvider for AnthropicAdapter {
                     let err_text = resp.text().await.unwrap_or_default();
 
                     if status == reqwest::StatusCode::TOO_MANY_REQUESTS && attempt <= max_retries {
-                        let delay = extract_retry_delay(&headers, &err_text)
-                            .unwrap_or_else(|| std::time::Duration::from_millis(1000 * (1 << (attempt - 1))));
+                        let delay = extract_retry_delay(&headers, &err_text).unwrap_or_else(|| {
+                            std::time::Duration::from_millis(1000 * (1 << (attempt - 1)))
+                        });
                         if delay <= std::time::Duration::from_secs(35) {
                             tracing::warn!(
                                 "Hit 429 rate limit (attempt {attempt}/{max_retries}). Sleeping {delay:?} before retry..."
@@ -150,8 +151,10 @@ impl LlmProvider for AnthropicAdapter {
                     .into());
                 }
                 Err(_e) if attempt <= max_retries => {
-                    tokio::time::sleep(std::time::Duration::from_millis(200 * (1 << (attempt - 1))))
-                        .await;
+                    tokio::time::sleep(std::time::Duration::from_millis(
+                        200 * (1 << (attempt - 1)),
+                    ))
+                    .await;
                     continue;
                 }
                 Err(e) => return Err(LlmError::Http(e).into()),
@@ -229,11 +232,8 @@ impl LlmStream for AnthropicStream {
                                     .and_then(Value::as_str)
                                     .unwrap_or("")
                                     .to_string();
-                                self.current_tool_call = Some(ToolCall::new(
-                                    id,
-                                    name,
-                                    String::new(),
-                                ));
+                                self.current_tool_call =
+                                    Some(ToolCall::new(id, name, String::new()));
                             }
                         }
                         "content_block_delta" => {
@@ -271,7 +271,11 @@ impl LlmStream for AnthropicStream {
                                 .and_then(|d| d.get("stop_reason"))
                                 .and_then(Value::as_str)
                             {
-                                let reason = if stop_reason == "max_tokens" { "length" } else { stop_reason };
+                                let reason = if stop_reason == "max_tokens" {
+                                    "length"
+                                } else {
+                                    stop_reason
+                                };
                                 self.pending_chunks
                                     .push_back(LlmChunk::FinishReason(reason.to_string()));
                             }

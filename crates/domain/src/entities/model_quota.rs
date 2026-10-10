@@ -21,7 +21,10 @@ pub struct ModelUsageStat {
 
 /// Known quota limits for popular AI models.
 pub fn get_default_quota_for_model(model: &str) -> (String, u32, u32, bool) {
-    if model.starts_with("gemini-3.8") || model.starts_with("gemini-2") || model.starts_with("gemini-1.5-flash") {
+    if model.starts_with("gemini-3.8")
+        || model.starts_with("gemini-2")
+        || model.starts_with("gemini-1.5-flash")
+    {
         ("gemini".to_string(), 15, 1500, true)
     } else if model.starts_with("gemini-1.5-pro") {
         ("gemini".to_string(), 2, 50, true)
@@ -33,7 +36,11 @@ pub fn get_default_quota_for_model(model: &str) -> (String, u32, u32, bool) {
         ("openai".to_string(), 500, 5000, false)
     } else if model.starts_with("llama") && model.contains("versatile") {
         ("groq".to_string(), 30, 14400, true)
-    } else if model.starts_with("llama") || model.to_lowercase().contains("qwen") || model.to_lowercase().contains("deepseek") || model.to_lowercase().contains("mistral") {
+    } else if model.starts_with("llama")
+        || model.to_lowercase().contains("qwen")
+        || model.to_lowercase().contains("deepseek")
+        || model.to_lowercase().contains("mistral")
+    {
         ("ollama".to_string(), 0, 0, false) // 0 means unlimited local
     } else {
         ("openai".to_string(), 60, 2000, false)
